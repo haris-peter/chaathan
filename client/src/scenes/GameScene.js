@@ -28,12 +28,15 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
+        this.physics.world.setBounds(0, 0, GAME_CONSTANTS.MAP_WIDTH, GAME_CONSTANTS.MAP_HEIGHT);
+
         this.createMap();
         this.createRitualCircle();
         this.createLamps();
         this.createDoors();
         this.createRitualItem();
         this.createPlayers();
+        this.setupCamera();
         this.createUI();
         this.setupControls();
         this.setupNetwork();
@@ -41,40 +44,111 @@ export class GameScene extends Phaser.Scene {
     }
 
     createMap() {
-        for (let x = 0; x < 25; x++) {
-            for (let y = 0; y < 19; y++) {
-                const isWall = x === 0 || x === 24 || y === 0 || y === 18 ||
-                    (x === 8 && y < 12) || (x === 16 && y > 6) ||
-                    (y === 8 && x > 3 && x < 8) || (y === 12 && x > 16 && x < 21);
+        const tileSize = GAME_CONSTANTS.TILE_SIZE;
+        const mapTilesX = Math.ceil(GAME_CONSTANTS.MAP_WIDTH / tileSize);
+        const mapTilesY = Math.ceil(GAME_CONSTANTS.MAP_HEIGHT / tileSize);
 
-                if (isWall) {
-                    this.add.image(x * 32 + 16, y * 32 + 16, 'wall');
+        for (let x = 0; x < mapTilesX; x++) {
+            for (let y = 0; y < mapTilesY; y++) {
+                const gridX = Math.floor(x / 25);
+                const gridY = Math.floor(y / 19);
+                const localX = x % 25;
+                const localY = y % 19;
+
+                const isOuterWall = x === 0 || x === mapTilesX - 1 || y === 0 || y === mapTilesY - 1;
+                const isGridBorder = (localX === 0 || localX === 24) && (gridX > 0 || localX === 24);
+                const isHorizontalWall = localY === 0 && gridY > 0;
+
+                const hasDoorOpening = this.isDoorOpening(x, y, tileSize);
+
+                if ((isOuterWall || isGridBorder || isHorizontalWall) && !hasDoorOpening) {
+                    this.add.image(x * tileSize + tileSize / 2, y * tileSize + tileSize / 2, 'wall');
                 } else {
-                    this.add.image(x * 32 + 16, y * 32 + 16, 'floor');
+                    this.add.image(x * tileSize + tileSize / 2, y * tileSize + tileSize / 2, 'floor');
                 }
             }
         }
 
         this.walls = this.physics.add.staticGroup();
 
-        const wallPositions = [
-            { x: 0, y: 0, w: 800, h: 32 },
-            { x: 0, y: 568, w: 800, h: 32 },
-            { x: 0, y: 0, w: 32, h: 600 },
-            { x: 768, y: 0, w: 32, h: 600 },
-            { x: 256, y: 0, w: 16, h: 384 },
-            { x: 512, y: 216, w: 16, h: 384 }
+        this.add.rectangle(GAME_CONSTANTS.MAP_WIDTH / 2, 16, GAME_CONSTANTS.MAP_WIDTH, 32, 0x2d2520);
+        this.add.rectangle(GAME_CONSTANTS.MAP_WIDTH / 2, GAME_CONSTANTS.MAP_HEIGHT - 16, GAME_CONSTANTS.MAP_WIDTH, 32, 0x2d2520);
+        this.add.rectangle(16, GAME_CONSTANTS.MAP_HEIGHT / 2, 32, GAME_CONSTANTS.MAP_HEIGHT, 0x2d2520);
+        this.add.rectangle(GAME_CONSTANTS.MAP_WIDTH - 16, GAME_CONSTANTS.MAP_HEIGHT / 2, 32, GAME_CONSTANTS.MAP_HEIGHT, 0x2d2520);
+
+        const outerWalls = [
+            { x: 0, y: 0, w: GAME_CONSTANTS.MAP_WIDTH, h: 32 },
+            { x: 0, y: GAME_CONSTANTS.MAP_HEIGHT - 32, w: GAME_CONSTANTS.MAP_WIDTH, h: 32 },
+            { x: 0, y: 0, w: 32, h: GAME_CONSTANTS.MAP_HEIGHT },
+            { x: GAME_CONSTANTS.MAP_WIDTH - 32, y: 0, w: 32, h: GAME_CONSTANTS.MAP_HEIGHT }
         ];
 
-        wallPositions.forEach(wall => {
+        outerWalls.forEach(wall => {
             const rect = this.add.rectangle(wall.x + wall.w / 2, wall.y + wall.h / 2, wall.w, wall.h, 0x2d2520);
+            rect.setAlpha(0);
             this.physics.add.existing(rect, true);
             this.walls.add(rect);
         });
 
-        this.add.text(100, 50, 'ENTRANCE', { font: '10px Courier New', fill: '#333333' });
-        this.add.text(400, 50, 'MAIN HALL', { font: '10px Courier New', fill: '#333333' });
-        this.add.text(650, 400, 'POOJA ROOM', { font: '10px Courier New', fill: '#550000' });
+        for (let gx = 1; gx < 3; gx++) {
+            const wallX = gx * 800;
+            for (let gy = 0; gy < 3; gy++) {
+                const hasOpening = this.gameData.doors.some(d =>
+                    Math.abs(d.x - wallX) < 50 && d.y >= gy * 600 && d.y < (gy + 1) * 600
+                );
+                if (!hasOpening) {
+                    const rect = this.add.rectangle(wallX, gy * 600 + 300, 32, 600, 0x2d2520);
+                    rect.setAlpha(0);
+                    this.physics.add.existing(rect, true);
+                    this.walls.add(rect);
+                }
+            }
+        }
+
+        this.addRoomLabels();
+    }
+
+    isDoorOpening(tileX, tileY, tileSize) {
+        const pixelX = tileX * tileSize + tileSize / 2;
+        const pixelY = tileY * tileSize + tileSize / 2;
+
+        return this.gameData.doors.some(door => {
+            const dx = Math.abs(door.x - pixelX);
+            const dy = Math.abs(door.y - pixelY);
+            return dx < 40 && dy < 40;
+        });
+    }
+
+    addRoomLabels() {
+        const rooms = [
+            { x: 400, y: 300, name: 'ENTRANCE HALL' },
+            { x: 1200, y: 300, name: 'MAIN HALL' },
+            { x: 2000, y: 300, name: 'EAST WING' },
+            { x: 400, y: 900, name: 'WEST CHAMBER' },
+            { x: 1200, y: 900, name: 'CENTRAL ROOM' },
+            { x: 2000, y: 900, name: 'ANCESTORS HALL' },
+            { x: 400, y: 1500, name: 'STORAGE' },
+            { x: 1200, y: 1500, name: 'KITCHEN' },
+            { x: 2000, y: 1500, name: 'POOJA ROOM' }
+        ];
+
+        rooms.forEach(room => {
+            const color = room.name === 'POOJA ROOM' ? '#550000' : '#333333';
+            this.add.text(room.x, room.y - 200, room.name, {
+                font: '14px Courier New',
+                fill: color
+            }).setOrigin(0.5);
+        });
+    }
+
+    setupCamera() {
+        this.cameras.main.setBounds(0, 0, GAME_CONSTANTS.MAP_WIDTH, GAME_CONSTANTS.MAP_HEIGHT);
+
+        if (this.myPlayer) {
+            this.cameras.main.startFollow(this.myPlayer, true, 0.1, 0.1);
+        }
+
+        this.cameras.main.setZoom(1);
     }
 
     createRitualCircle() {
@@ -96,6 +170,7 @@ export class GameScene extends Phaser.Scene {
             lamp.setInteractive();
             lamp.lampId = lampData.id;
             lamp.lampState = lampData.state;
+            lamp.setScale(1.5);
 
             lamp.on('pointerdown', () => this.onLampClick(lamp));
 
@@ -110,6 +185,7 @@ export class GameScene extends Phaser.Scene {
             door.setInteractive();
             door.doorId = doorData.id;
             door.doorState = doorData.state;
+            door.setScale(1.5);
 
             door.on('pointerdown', () => this.onDoorClick(door));
 
@@ -122,6 +198,7 @@ export class GameScene extends Phaser.Scene {
         this.ritualItem = this.add.image(item.x, item.y, 'ritual-item');
         this.ritualItem.setInteractive();
         this.ritualItem.carrier = item.carrier;
+        this.ritualItem.setScale(1.5);
 
         this.ritualItem.on('pointerdown', () => this.onItemClick());
 
@@ -134,18 +211,25 @@ export class GameScene extends Phaser.Scene {
         this.gameData.players.forEach(playerData => {
             this.createPlayerSprite(playerData);
         });
+
+        if (this.myPlayer) {
+            this.cameras.main.startFollow(this.myPlayer, true, 0.1, 0.1);
+        }
     }
 
     createPlayerSprite(playerData) {
         const isMe = playerData.id === this.myId;
         const isChaathan = playerData.role === 'chaathan';
 
-        let sprite;
         if (isChaathan && !isMe && this.myRole !== 'chaathan') {
             return;
         }
 
-        if (isChaathan && !isMe) {
+        let sprite;
+        if (isChaathan && isMe) {
+            sprite = this.physics.add.sprite(playerData.x, playerData.y, 'player');
+            sprite.setTint(0x8b0000);
+        } else if (isChaathan && !isMe) {
             sprite = this.physics.add.sprite(playerData.x, playerData.y, 'chaathan-ghost');
             sprite.setAlpha(0.4);
         } else {
@@ -156,9 +240,12 @@ export class GameScene extends Phaser.Scene {
         sprite.playerId = playerData.id;
         sprite.playerRole = playerData.role;
         sprite.isCarryingItem = playerData.isCarryingItem;
+        sprite.setScale(1.2);
 
         if (isMe) {
-            sprite.setTint(0x88ff88);
+            if (!isChaathan) {
+                sprite.setTint(0x88ff88);
+            }
             this.myPlayer = sprite;
             this.physics.add.collider(sprite, this.walls);
         } else {
@@ -182,6 +269,10 @@ export class GameScene extends Phaser.Scene {
             fill: '#ffcc00'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
 
+        this.minimapGraphics = this.add.graphics();
+        this.minimapGraphics.setScrollFactor(0).setDepth(100);
+        this.createMinimap();
+
         if (this.myRole === 'chaathan') {
             this.createChaathanUI();
         } else {
@@ -189,37 +280,58 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
+    createMinimap() {
+        const mmX = 700, mmY = 500, mmW = 90, mmH = 68;
+
+        this.minimapGraphics.fillStyle(0x000000, 0.7);
+        this.minimapGraphics.fillRect(mmX - 5, mmY - 5, mmW + 10, mmH + 10);
+
+        this.minimapGraphics.lineStyle(1, 0x444444, 1);
+        for (let i = 0; i <= 3; i++) {
+            this.minimapGraphics.lineBetween(mmX + i * 30, mmY, mmX + i * 30, mmY + mmH);
+        }
+        for (let i = 0; i <= 3; i++) {
+            this.minimapGraphics.lineBetween(mmX, mmY + i * (mmH / 3), mmX + mmW, mmY + i * (mmH / 3));
+        }
+
+        this.minimapPlayerDot = this.add.circle(mmX, mmY, 3, 0x00ff00);
+        this.minimapPlayerDot.setScrollFactor(0).setDepth(101);
+    }
+
+    updateMinimap() {
+        if (!this.myPlayer || !this.minimapPlayerDot) return;
+
+        const mmX = 700, mmY = 500, mmW = 90, mmH = 68;
+        const px = (this.myPlayer.x / GAME_CONSTANTS.MAP_WIDTH) * mmW + mmX;
+        const py = (this.myPlayer.y / GAME_CONSTANTS.MAP_HEIGHT) * mmH + mmY;
+        this.minimapPlayerDot.setPosition(px, py);
+    }
+
     createChaathanUI() {
-        const maskBg = this.add.rectangle(700, 100, 120, 150, 0x1a0000, 0.8);
+        const maskBg = this.add.rectangle(80, 100, 140, 180, 0x1a0000, 0.8);
         maskBg.setScrollFactor(0).setDepth(100);
 
-        this.add.image(700, 80, 'chaathan-mask').setScale(0.5).setScrollFactor(0).setDepth(101);
+        this.add.image(80, 70, 'chaathan-mask').setScale(0.4).setScrollFactor(0).setDepth(101);
 
-        this.add.text(700, 140, 'CHAATHAN', {
+        this.add.text(80, 120, 'CHAATHAN', {
             font: 'bold 12px Courier New',
             fill: '#8b0000'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
 
         this.abilityTexts = {};
         const abilities = [
-            { key: 'flicker', label: '[1] Flicker', y: 200 },
-            { key: 'extinguish', label: '[2] Extinguish', y: 225 },
-            { key: 'seal', label: '[3] Seal Door', y: 250 },
-            { key: 'push', label: '[4] Push', y: 275 }
+            { key: 'flicker', label: '[1] Flicker', y: 145 },
+            { key: 'extinguish', label: '[2] Extinguish', y: 160 },
+            { key: 'seal', label: '[3] Seal Door', y: 175 },
+            { key: 'push', label: '[4] Push', y: 190 }
         ];
 
         abilities.forEach(ab => {
-            this.abilityTexts[ab.key] = this.add.text(700, ab.y, ab.label, {
-                font: '12px Courier New',
+            this.abilityTexts[ab.key] = this.add.text(80, ab.y, ab.label, {
+                font: '10px Courier New',
                 fill: '#cccccc'
             }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
         });
-
-        this.add.text(700, 310, 'Click target\nthen press key', {
-            font: '10px Courier New',
-            fill: '#666666',
-            align: 'center'
-        }).setOrigin(0.5).setScrollFactor(0).setDepth(101);
     }
 
     createPoojariUI() {
@@ -423,8 +535,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     showRandomShadow() {
-        const x = Phaser.Math.Between(100, 700);
-        const y = Phaser.Math.Between(100, 500);
+        if (!this.myPlayer) return;
+
+        const offsetX = Phaser.Math.Between(-300, 300);
+        const offsetY = Phaser.Math.Between(-200, 200);
+        const x = Phaser.Math.Clamp(this.myPlayer.x + offsetX, 50, GAME_CONSTANTS.MAP_WIDTH - 50);
+        const y = Phaser.Math.Clamp(this.myPlayer.y + offsetY, 50, GAME_CONSTANTS.MAP_HEIGHT - 50);
 
         const shadow = this.add.image(x, y, 'shadow-silhouette');
         shadow.setAlpha(0).setDepth(50);
@@ -444,6 +560,7 @@ export class GameScene extends Phaser.Scene {
 
         this.handleMovement();
         this.updateCooldownDisplay();
+        this.updateMinimap();
     }
 
     handleMovement() {
@@ -521,7 +638,7 @@ export class GameScene extends Phaser.Scene {
 
         this.highlightGraphics = this.add.graphics();
         this.highlightGraphics.lineStyle(2, 0xff0000, 1);
-        this.highlightGraphics.strokeCircle(target.x, target.y, 30);
+        this.highlightGraphics.strokeCircle(target.x, target.y, 40);
 
         this.time.delayedCall(2000, () => {
             if (this.highlightGraphics) {

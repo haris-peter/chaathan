@@ -21,24 +21,35 @@ export const gameConfig = {
 };
 
 export const GAME_CONSTANTS = {
-    MAP_WIDTH: 800,
-    MAP_HEIGHT: 600,
-    PLAYER_SPEED: 150,
-    INTERACTION_DISTANCE: 50,
+    MAP_WIDTH: 2400,
+    MAP_HEIGHT: 1800,
+    TILE_SIZE: 32,
+    SCREEN_WIDTH: 800,
+    SCREEN_HEIGHT: 600,
+    PLAYER_SPEED: 200,
+    INTERACTION_DISTANCE: 60,
     RITUAL_CIRCLE: {
-        x: 600,
-        y: 450,
+        x: 2100,
+        y: 1500,
         radius: 80
     },
     LAMP_POSITIONS: [
-        { x: 150, y: 150 },
-        { x: 650, y: 150 },
-        { x: 400, y: 350 }
+        { x: 400, y: 300 },
+        { x: 1200, y: 900 },
+        { x: 2000, y: 300 }
     ],
     DOOR_POSITIONS: [
-        { x: 200, y: 250 },
-        { x: 400, y: 200 },
-        { x: 600, y: 250 },
-        { x: 500, y: 400 }
-    ]
+        { x: 800, y: 300 },
+        { x: 800, y: 900 },
+        { x: 1600, y: 600 },
+        { x: 1600, y: 1200 }
+    ],
+    SPAWN_POINTS: {
+        POOJARI: [
+            { x: 200, y: 200 },
+            { x: 200, y: 900 },
+            { x: 200, y: 1600 }
+        ],
+        CHAATHAN: { x: 2200, y: 1600 }
+    }
 };

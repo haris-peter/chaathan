@@ -21,10 +21,10 @@ export class GameRoom {
         this.timerInterval = null;
         this.lamps = this.initLamps();
         this.doors = this.initDoors();
-        this.ritualItem = { x: 400, y: 100, carrier: null };
+        this.ritualItem = { x: 1200, y: 600, carrier: null };
         this.ritualCircle = {
-            x: 600,
-            y: 450,
+            x: 2100,
+            y: 1500,
             radius: 80,
             playersInside: new Set(),
             progress: 0,
@@ -36,22 +36,31 @@ export class GameRoom {
             sealDoor: 0,
             pushPlayer: 0
         };
+        this.spawnPoints = {
+            poojari: [
+                { x: 200, y: 200 },
+                { x: 200, y: 900 },
+                { x: 200, y: 1600 }
+            ],
+            chaathan: { x: 2200, y: 1600 }
+        };
+        this.poojariSpawnIndex = 0;
     }
 
     initLamps() {
         return [
-            { id: 0, x: 150, y: 150, state: LAMP_STATES.UNLIT },
-            { id: 1, x: 650, y: 150, state: LAMP_STATES.UNLIT },
-            { id: 2, x: 400, y: 350, state: LAMP_STATES.UNLIT }
+            { id: 0, x: 400, y: 300, state: LAMP_STATES.UNLIT },
+            { id: 1, x: 1200, y: 900, state: LAMP_STATES.UNLIT },
+            { id: 2, x: 2000, y: 300, state: LAMP_STATES.UNLIT }
         ];
     }
 
     initDoors() {
         return [
-            { id: 0, x: 200, y: 250, state: DOOR_STATES.OPEN, sealTimer: null },
-            { id: 1, x: 400, y: 200, state: DOOR_STATES.OPEN, sealTimer: null },
-            { id: 2, x: 600, y: 250, state: DOOR_STATES.OPEN, sealTimer: null },
-            { id: 3, x: 500, y: 400, state: DOOR_STATES.OPEN, sealTimer: null }
+            { id: 0, x: 800, y: 300, state: DOOR_STATES.OPEN, sealTimer: null },
+            { id: 1, x: 800, y: 900, state: DOOR_STATES.OPEN, sealTimer: null },
+            { id: 2, x: 1600, y: 600, state: DOOR_STATES.OPEN, sealTimer: null },
+            { id: 3, x: 1600, y: 1200, state: DOOR_STATES.OPEN, sealTimer: null }
         ];
     }
 
@@ -62,7 +71,7 @@ export class GameRoom {
             id: socketId,
             name: playerName || `Player${this.players.size + 1}`,
             role: null,
-            x: 100 + (this.players.size * 50),
+            x: 400,
             y: 300,
             isCarryingItem: false
         };
@@ -84,9 +93,20 @@ export class GameRoom {
         const playerIds = Array.from(this.players.keys());
         const shuffled = playerIds.sort(() => Math.random() - 0.5);
 
+        let poojariIndex = 0;
         shuffled.forEach((id, index) => {
             const player = this.players.get(id);
-            player.role = index === 0 ? ROLES.CHAATHAN : ROLES.POOJARI;
+            if (index === 0) {
+                player.role = ROLES.CHAATHAN;
+                player.x = this.spawnPoints.chaathan.x;
+                player.y = this.spawnPoints.chaathan.y;
+            } else {
+                player.role = ROLES.POOJARI;
+                const spawn = this.spawnPoints.poojari[poojariIndex];
+                player.x = spawn.x;
+                player.y = spawn.y;
+                poojariIndex++;
+            }
         });
     }
 
