@@ -44,6 +44,7 @@ export class BootScene extends Phaser.Scene {
             'assets/sprites/poojari/poojari_walk.json'
         );
 
+        this.load.image('poster', 'assets/poster.png');
         this.createPlaceholderAssets();
     }
 
@@ -246,6 +247,6 @@ export class BootScene extends Phaser.Scene {
             repeat: -1
         });
 
-        this.scene.start('LobbyScene');
+        this.scene.start('TitleScene');
     }
 }

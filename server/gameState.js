@@ -376,8 +376,41 @@ export class GameManager {
         const player = room.addPlayer(socketId, playerName);
         if (player) {
             this.playerRoomMap.set(socketId, room.roomId);
+            this.logRegistry();
         }
         return { room, player };
+    }
+
+    joinSpecificRoom(socketId, playerName, roomId) {
+        const room = this.rooms.get(roomId);
+        if (!room) return { error: 'Room not found' };
+
+        if (room.gameState !== GAME_STATES.WAITING) {
+            return { error: 'Game already in progress' };
+        }
+
+        if (room.players.size >= MAX_PLAYERS) {
+            return { error: 'Room is full' };
+        }
+
+        const player = room.addPlayer(socketId, playerName);
+        if (player) {
+            this.playerRoomMap.set(socketId, room.roomId);
+            this.logRegistry();
+            return { room, player };
+        }
+        return { error: 'Could not join room' };
+    }
+
+    createNewRoom(socketId, playerName) {
+        const room = this.createRoom();
+        const player = room.addPlayer(socketId, playerName);
+        if (player) {
+            this.playerRoomMap.set(socketId, room.roomId);
+            this.logRegistry();
+            return { room, player };
+        }
+        return { error: 'Could not create room' };
     }
 
     leaveRoom(socketId) {
@@ -393,11 +426,42 @@ export class GameManager {
                 }
             }
             this.playerRoomMap.delete(socketId);
+            this.logRegistry();
         }
     }
 
     getPlayerRoom(socketId) {
         const roomId = this.playerRoomMap.get(socketId);
         return roomId ? this.rooms.get(roomId) : null;
+    }
+
+    logRegistry() {
+        console.log('\n--- Room Registry ---');
+        if (this.rooms.size === 0) {
+            console.log('(No active rooms)');
+        } else {
+            this.rooms.forEach(room => {
+                const playerList = Array.from(room.players.values()).map(p => `${p.name} (${p.id})`).join(', ');
+                console.log(`Room [${room.roomId}]:
+  Status: ${room.gameState}
+  Players: ${room.players.size}/${MAX_PLAYERS} [${playerList}]
+  Progress: ${Math.floor(room.ritualCircle.progress / 1000)}s / ${RITUAL_DURATION / 1000}s`);
+            });
+        }
+        console.log('---------------------\n');
+    }
+
+    getRegistrySummary() {
+        const summary = [];
+        this.rooms.forEach(room => {
+            summary.push({
+                roomId: room.roomId,
+                status: room.gameState,
+                playerCount: room.players.size,
+                maxPlayers: MAX_PLAYERS,
+                progress: room.ritualCircle.progress
+            });
+        });
+        return summary;
     }
 }

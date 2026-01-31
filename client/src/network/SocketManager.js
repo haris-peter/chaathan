@@ -7,22 +7,34 @@ class SocketManagerClass {
     }
 
     connect(serverUrl = 'http://localhost:3000') {
-        if (this.socket?.connected) return this.socket;
+        console.log(`[SocketManager] Connecting to ${serverUrl}...`);
+        if (this.socket?.connected) {
+            console.log('[SocketManager] Already connected');
+            return this.socket;
+        }
 
         this.socket = io(serverUrl, {
-            transports: ['websocket', 'polling']
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionAttempts: 5,
+            reconnectionDelay: 1000,
+            timeout: 10000
         });
 
         this.socket.on('connect', () => {
-            console.log('Connected to server:', this.socket.id);
+            console.log('[SocketManager] Connected to server:', this.socket.id);
         });
 
-        this.socket.on('disconnect', () => {
-            console.log('Disconnected from server');
+        this.socket.on('connect_error', (error) => {
+            console.error('[SocketManager] Connection error:', error);
+        });
+
+        this.socket.on('disconnect', (reason) => {
+            console.log('[SocketManager] Disconnected from server:', reason);
         });
 
         this.socket.on('error', (error) => {
-            console.error('Socket error:', error);
+            console.error('[SocketManager] Socket error:', error);
         });
 
         return this.socket;
@@ -30,19 +42,24 @@ class SocketManagerClass {
 
     disconnect() {
         if (this.socket) {
+            console.log('[SocketManager] Disconnecting...');
             this.socket.disconnect();
             this.socket = null;
         }
     }
 
     emit(event, data) {
-        if (this.socket?.connected) {
+        if (this.socket) {
+            console.log(`[SocketManager] Emitting ${event}`, data);
             this.socket.emit(event, data);
+        } else {
+            console.warn(`[SocketManager] Cannot emit ${event} - socket not initialized`);
         }
     }
 
     on(event, callback) {
         if (this.socket) {
+            // console.log(`[SocketManager] Registering listener for ${event}`);
             this.socket.on(event, callback);
             if (!this.listeners.has(event)) {
                 this.listeners.set(event, []);
@@ -70,7 +87,17 @@ class SocketManagerClass {
     }
 
     joinGame(playerName) {
+        console.log(`[SocketManager] joinGame called for ${playerName}`);
         this.emit('join-game', playerName);
+    }
+    createRoom(playerName) {
+        console.log(`[SocketManager] createRoom called for ${playerName}`);
+        this.emit('create-room', { playerName });
+    }
+
+    joinSpecificRoom(playerName, roomId) {
+        console.log(`[SocketManager] joinSpecificRoom called for ${playerName} in room ${roomId}`);
+        this.emit('join-specific-room', { playerName, roomId });
     }
 
     sendMove(x, y) {

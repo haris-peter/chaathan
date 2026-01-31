@@ -10,7 +10,9 @@ const io = new Server(server, {
     cors: {
         origin: '*',
         methods: ['GET', 'POST']
-    }
+    },
+    pingTimeout: 30000,
+    pingInterval: 10000
 });
 
 const gameManager = new GameManager();
@@ -19,6 +21,8 @@ io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
 
     socket.on('join-game', (playerName) => {
+        console.log(`[${socket.id}] Quick join requested: ${playerName}`);
+        // Quick join
         const { room, player } = gameManager.joinRoom(socket.id, playerName);
 
         if (!player) {
@@ -26,6 +30,38 @@ io.on('connection', (socket) => {
             return;
         }
 
+        joinRoomSuccess(socket, room, player);
+    });
+
+    socket.on('create-room', ({ playerName }) => {
+        console.log(`[${socket.id}] Create room requested: ${playerName}`);
+        const { room, player, error } = gameManager.createNewRoom(socket.id, playerName);
+
+        if (error) {
+            console.error(`[${socket.id}] Create room failed: ${error}`);
+            socket.emit('error', { message: error });
+            return;
+        }
+
+        console.log(`[${socket.id}] Room created: ${room.roomId}`);
+        joinRoomSuccess(socket, room, player);
+    });
+
+    socket.on('join-specific-room', ({ playerName, roomId }) => {
+        console.log(`[${socket.id}] Join specific room requested: ${roomId} as ${playerName}`);
+        const { room, player, error } = gameManager.joinSpecificRoom(socket.id, playerName, roomId);
+
+        if (error) {
+            console.error(`[${socket.id}] Join specific room failed: ${error}`);
+            socket.emit('error', { message: error });
+            return;
+        }
+
+        console.log(`[${socket.id}] Joined room: ${room.roomId}`);
+        joinRoomSuccess(socket, room, player);
+    });
+
+    function joinRoomSuccess(socket, room, player) {
         socket.join(room.roomId);
         socket.emit('joined-room', {
             roomId: room.roomId,
@@ -38,6 +74,10 @@ io.on('connection', (socket) => {
             playerCount: room.players.size
         });
 
+        checkGameStart(room);
+    }
+
+    function checkGameStart(room) {
         if (room.players.size === MAX_PLAYERS) {
             if (room.startGame(io)) {
                 const state = room.getState();
@@ -53,7 +93,7 @@ io.on('connection', (socket) => {
                 });
             }
         }
-    });
+    }
 
     socket.on('player-move', ({ x, y }) => {
         const room = gameManager.getPlayerRoom(socket.id);
