@@ -53,6 +53,15 @@ export class BootScene extends Phaser.Scene {
         );
 
         this.load.image('poster', 'assets/poster.png');
+
+        const bgTypes = ['hallway', 'chamber', 'storage', 'sacred', 'dark', 'outdoor', 'tower', 'kitchen'];
+        bgTypes.forEach(type => {
+            this.load.image(`bg-${type}`, `assets/background/${type}.png`);
+        });
+
+        this.load.video('start-cinematic', 'assets/start_cinematic.mp4', true);
+        this.load.video('end-cinematic', 'assets/end_cinematic.mp4', true);
+
         this.createPlaceholderAssets();
     }
 

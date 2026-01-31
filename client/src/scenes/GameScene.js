@@ -46,6 +46,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     create() {
+        this.createRoomBackgrounds();
         this.createMap();
         this.addRoomLabels();
         this.createLamps();
@@ -59,8 +60,35 @@ export class GameScene extends Phaser.Scene {
         this.setupNetwork();
     }
 
+    createRoomBackgrounds() {
+        this.roomBackgrounds = [];
+        const roomWidth = GAME_CONSTANTS.ROOM_WIDTH;
+        const roomHeight = GAME_CONSTANTS.ROOM_HEIGHT;
+
+        for (let row = 0; row < GAME_CONSTANTS.ROOM_ROWS; row++) {
+            for (let col = 0; col < GAME_CONSTANTS.ROOM_COLS; col++) {
+                const key = `${col},${row}`;
+                const roomInfo = GAME_CONSTANTS.ROOM_BACKGROUNDS[key];
+
+                if (roomInfo) {
+                    const bgKey = `bg-${roomInfo.bg}`;
+                    const x = col * roomWidth + roomWidth / 2;
+                    const y = row * roomHeight + roomHeight / 2;
+
+                    if (this.textures.exists(bgKey)) {
+                        const bg = this.add.image(x, y, bgKey);
+                        bg.setDisplaySize(roomWidth, roomHeight);
+                        bg.setDepth(0);
+                        this.roomBackgrounds.push(bg);
+                    }
+                }
+            }
+        }
+    }
+
     createMap() {
         const graphics = this.add.graphics();
+        graphics.setDepth(1);
         const tileSize = GAME_CONSTANTS.TILE_SIZE;
         const mapWidth = GAME_CONSTANTS.MAP_WIDTH;
         const mapHeight = GAME_CONSTANTS.MAP_HEIGHT;
@@ -72,16 +100,15 @@ export class GameScene extends Phaser.Scene {
 
                 const isWall = this.isWallTile(tileX, tileY, tileSize);
                 if (isWall) {
-                    graphics.fillStyle(0x2a2a2a, 1);
-                } else {
-                    const shade = ((tileX + tileY) % 2 === 0) ? 0x1a1a1a : 0x151515;
-                    graphics.fillStyle(shade, 1);
+                    graphics.fillStyle(0x1a1510, 1);
+                    graphics.fillRect(x, y, tileSize, tileSize);
+                    graphics.lineStyle(1, 0x2a2520, 0.8);
+                    graphics.strokeRect(x, y, tileSize, tileSize);
                 }
-                graphics.fillRect(x, y, tileSize, tileSize);
             }
         }
 
-        graphics.lineStyle(2, 0x333333, 1);
+        graphics.lineStyle(3, 0x0a0a0a, 0.8);
         for (let i = 0; i <= GAME_CONSTANTS.ROOM_COLS; i++) {
             const x = i * GAME_CONSTANTS.ROOM_WIDTH;
             graphics.moveTo(x, 0);
@@ -172,24 +199,21 @@ export class GameScene extends Phaser.Scene {
     }
 
     addRoomLabels() {
-        const rooms = [
-            'Entrance Hall', 'Main Hall', 'East Wing', 'Grand Gallery', 'Tower East',
-            'West Chamber', 'Central Room', 'Ancestors Hall', 'Library', 'Study',
-            'Storage', 'Kitchen', 'Pooja Room', 'Garden', 'Chapel',
-            'Cellar', 'Wine Room', 'Shrine', 'Courtyard', 'Stable',
-            'Dungeon', 'Crypt', 'Secret Room', 'Treasury', 'Tower West'
-        ];
-
-        let index = 0;
         for (let row = 0; row < GAME_CONSTANTS.ROOM_ROWS; row++) {
             for (let col = 0; col < GAME_CONSTANTS.ROOM_COLS; col++) {
+                const key = `${col},${row}`;
+                const roomInfo = GAME_CONSTANTS.ROOM_BACKGROUNDS[key];
+                const roomName = roomInfo ? roomInfo.name : `Room ${col},${row}`;
+
                 const x = col * GAME_CONSTANTS.ROOM_WIDTH + GAME_CONSTANTS.ROOM_WIDTH / 2;
                 const y = row * GAME_CONSTANTS.ROOM_HEIGHT + 40;
-                this.add.text(x, y, rooms[index] || `Room ${index + 1}`, {
+                const label = this.add.text(x, y, roomName, {
                     font: '16px Courier New',
-                    fill: '#444444'
+                    fill: '#ffffff',
+                    stroke: '#000000',
+                    strokeThickness: 3
                 }).setOrigin(0.5);
-                index++;
+                label.setDepth(4);
             }
         }
     }
@@ -332,13 +356,15 @@ export class GameScene extends Phaser.Scene {
         const { x, y, radius } = GAME_CONSTANTS.RITUAL_CIRCLE;
 
         this.ritualCircleGraphics = this.add.graphics();
+        this.ritualCircleGraphics.setDepth(3);
         this.ritualCircleGraphics.lineStyle(3, 0x666666, 0.5);
         this.ritualCircleGraphics.strokeCircle(x, y, radius);
 
-        this.add.text(x, y - radius - 20, 'Ritual Circle', {
+        const label = this.add.text(x, y - radius - 20, 'Ritual Circle', {
             font: '14px Courier New',
             fill: '#666666'
         }).setOrigin(0.5);
+        label.setDepth(3);
     }
 
     createLamps() {
@@ -377,6 +403,7 @@ export class GameScene extends Phaser.Scene {
             lamp.lampType = lampData.type;
             lamp.state = lampData.state;
             lamp.isSprite = !isGrand && this.textures.exists('mini-lamp-unlit');
+            lamp.setDepth(5);
 
             lamp.on('pointerdown', () => this.onLampClick(lamp));
 
@@ -395,6 +422,7 @@ export class GameScene extends Phaser.Scene {
             const height = isVertical ? 60 : 20;
             const door = this.add.rectangle(doorData.x, doorData.y, width, height, 0x654321);
             door.setStrokeStyle(2, 0x8b4513);
+            door.setDepth(2);
             door.doorId = doorData.id;
             door.state = doorData.state;
             this.doors.push(door);
@@ -420,6 +448,7 @@ export class GameScene extends Phaser.Scene {
             sprite = this.add.circle(playerData.x, playerData.y, 15, 0xffff00);
         }
 
+        sprite.setDepth(10);
         sprite.playerId = playerData.id;
         sprite.playerName = playerData.name;
         sprite.isAlive = playerData.isAlive !== false;
@@ -428,6 +457,7 @@ export class GameScene extends Phaser.Scene {
             font: '12px Courier New',
             fill: '#ffffff'
         }).setOrigin(0.5);
+        nameTag.setDepth(11);
 
         sprite.nameTag = nameTag;
 
@@ -465,6 +495,7 @@ export class GameScene extends Phaser.Scene {
 
         sprite.chaathanId = chaathanData.id;
         sprite.state = chaathanData.state;
+        sprite.setDepth(10);
 
         return sprite;
     }
@@ -735,7 +766,15 @@ export class GameScene extends Phaser.Scene {
 
         SocketManager.on('game-over', (data) => {
             SocketManager.removeAllListeners();
-            this.scene.start('EndScene', { winner: data.winner });
+            if (data.winner === 'poojari_win') {
+                this.scene.start('CinematicScene', {
+                    type: 'end',
+                    nextScene: 'EndScene',
+                    nextSceneData: { winner: data.winner }
+                });
+            } else {
+                this.scene.start('EndScene', { winner: data.winner });
+            }
         });
     }
 
@@ -931,6 +970,7 @@ export class GameScene extends Phaser.Scene {
                 const newLamp = this.add.sprite(x, y, 'mini-lamp-lit', 'mini_lamp_1.png');
                 newLamp.setScale(miniLampScale);
                 newLamp.setInteractive();
+                newLamp.setDepth(5);
                 newLamp.lampId = lampId;
                 newLamp.lampType = lampType;
                 newLamp.state = 'lit';

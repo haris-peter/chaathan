@@ -136,7 +136,11 @@ export class InstructionScene extends Phaser.Scene {
 
         SocketManager.on('game-start', (data) => {
             SocketManager.removeAllListeners();
-            this.scene.start('GameScene', data);
+            this.scene.start('CinematicScene', {
+                type: 'start',
+                nextScene: 'GameScene',
+                nextSceneData: data
+            });
         });
 
         SocketManager.on('player-ready-update', (data) => {

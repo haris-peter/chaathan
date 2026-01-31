@@ -3,6 +3,7 @@ import { BootScene } from './scenes/BootScene.js';
 import { TitleScene } from './scenes/TitleScene.js';
 import { LobbyScene } from './scenes/LobbyScene.js';
 import { InstructionScene } from './scenes/InstructionScene.js';
+import { CinematicScene } from './scenes/CinematicScene.js';
 import { GameScene } from './scenes/GameScene.js';
 import { EndScene } from './scenes/EndScene.js';
 
@@ -19,7 +20,7 @@ export const gameConfig = {
             debug: false
         }
     },
-    scene: [BootScene, TitleScene, LobbyScene, InstructionScene, GameScene, EndScene]
+    scene: [BootScene, TitleScene, LobbyScene, InstructionScene, CinematicScene, GameScene, EndScene]
 };
 
 export const GAME_CONSTANTS = {
@@ -111,5 +112,33 @@ export const GAME_CONSTANTS = {
         { x: 200, y: 400 },
         { x: 400, y: 200 },
         { x: 400, y: 400 }
-    ]
+    ],
+
+    ROOM_BACKGROUNDS: {
+        '0,0': { name: 'Entrance Hall', bg: 'hallway' },
+        '1,0': { name: 'Main Hall', bg: 'hallway' },
+        '2,0': { name: 'East Wing', bg: 'chamber' },
+        '3,0': { name: 'Grand Gallery', bg: 'hallway' },
+        '4,0': { name: 'Tower East', bg: 'tower' },
+        '0,1': { name: 'West Chamber', bg: 'chamber' },
+        '1,1': { name: 'Central Room', bg: 'chamber' },
+        '2,1': { name: 'Ancestors Hall', bg: 'sacred' },
+        '3,1': { name: 'Library', bg: 'chamber' },
+        '4,1': { name: 'Study', bg: 'chamber' },
+        '0,2': { name: 'Storage', bg: 'storage' },
+        '1,2': { name: 'Kitchen', bg: 'kitchen' },
+        '2,2': { name: 'Pooja Room', bg: 'sacred' },
+        '3,2': { name: 'Garden', bg: 'outdoor' },
+        '4,2': { name: 'Chapel', bg: 'sacred' },
+        '0,3': { name: 'Cellar', bg: 'storage' },
+        '1,3': { name: 'Wine Room', bg: 'storage' },
+        '2,3': { name: 'Shrine', bg: 'sacred' },
+        '3,3': { name: 'Courtyard', bg: 'outdoor' },
+        '4,3': { name: 'Stable', bg: 'outdoor' },
+        '0,4': { name: 'Dungeon', bg: 'dark' },
+        '1,4': { name: 'Crypt', bg: 'dark' },
+        '2,4': { name: 'Secret Room', bg: 'dark' },
+        '3,4': { name: 'Treasury', bg: 'chamber' },
+        '4,4': { name: 'Tower West', bg: 'tower' }
+    }
 };
