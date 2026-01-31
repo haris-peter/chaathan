@@ -32,6 +32,11 @@ export class BootScene extends Phaser.Scene {
             loadingText.destroy();
         });
 
+        this.load.spritesheet('chaathan-sprite', 'assets/sprites/chaathan_sprite.png', {
+            frameWidth: 160,
+            frameHeight: 200
+        });
+
         this.createPlaceholderAssets();
     }
 
@@ -210,6 +215,13 @@ export class BootScene extends Phaser.Scene {
     }
 
     create() {
+        this.anims.create({
+            key: 'chaathan-walk',
+            frames: this.anims.generateFrameNumbers('chaathan-sprite', { start: 0, end: 3 }),
+            frameRate: 8,
+            repeat: -1
+        });
+
         this.scene.start('LobbyScene');
     }
 }

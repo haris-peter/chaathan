@@ -25,6 +25,9 @@ export class GameScene extends Phaser.Scene {
             push: 0
         };
         this.selectedTarget = null;
+        this.currentRoomX = 0;
+        this.currentRoomY = 0;
+        this.isTransitioning = false;
     }
 
     create() {
@@ -143,12 +146,92 @@ export class GameScene extends Phaser.Scene {
 
     setupCamera() {
         this.cameras.main.setBounds(0, 0, GAME_CONSTANTS.MAP_WIDTH, GAME_CONSTANTS.MAP_HEIGHT);
+        this.cameras.main.setZoom(1);
 
         if (this.myPlayer) {
-            this.cameras.main.startFollow(this.myPlayer, true, 0.1, 0.1);
+            this.currentRoomX = Math.floor(this.myPlayer.x / GAME_CONSTANTS.ROOM_WIDTH);
+            this.currentRoomY = Math.floor(this.myPlayer.y / GAME_CONSTANTS.ROOM_HEIGHT);
+            this.setCameraToRoom(this.currentRoomX, this.currentRoomY);
+        }
+    }
+
+    setCameraToRoom(roomX, roomY) {
+        const camX = roomX * GAME_CONSTANTS.ROOM_WIDTH + GAME_CONSTANTS.ROOM_WIDTH / 2;
+        const camY = roomY * GAME_CONSTANTS.ROOM_HEIGHT + GAME_CONSTANTS.ROOM_HEIGHT / 2;
+        this.cameras.main.centerOn(camX, camY);
+    }
+
+    checkRoomTransition() {
+        if (this.isTransitioning || !this.myPlayer) return;
+
+        const playerX = this.myPlayer.x;
+        const playerY = this.myPlayer.y;
+        const threshold = GAME_CONSTANTS.EDGE_THRESHOLD;
+        const roomWidth = GAME_CONSTANTS.ROOM_WIDTH;
+        const roomHeight = GAME_CONSTANTS.ROOM_HEIGHT;
+
+        const roomLeft = this.currentRoomX * roomWidth;
+        const roomRight = roomLeft + roomWidth;
+        const roomTop = this.currentRoomY * roomHeight;
+        const roomBottom = roomTop + roomHeight;
+
+        let newRoomX = this.currentRoomX;
+        let newRoomY = this.currentRoomY;
+        let newPlayerX = playerX;
+        let newPlayerY = playerY;
+
+        if (playerX < roomLeft + threshold && this.currentRoomX > 0) {
+            newRoomX = this.currentRoomX - 1;
+            newPlayerX = (newRoomX + 1) * roomWidth - threshold - 10;
+        } else if (playerX > roomRight - threshold && this.currentRoomX < GAME_CONSTANTS.ROOM_COLS - 1) {
+            newRoomX = this.currentRoomX + 1;
+            newPlayerX = newRoomX * roomWidth + threshold + 10;
         }
 
-        this.cameras.main.setZoom(1);
+        if (playerY < roomTop + threshold && this.currentRoomY > 0) {
+            newRoomY = this.currentRoomY - 1;
+            newPlayerY = (newRoomY + 1) * roomHeight - threshold - 10;
+        } else if (playerY > roomBottom - threshold && this.currentRoomY < GAME_CONSTANTS.ROOM_ROWS - 1) {
+            newRoomY = this.currentRoomY + 1;
+            newPlayerY = newRoomY * roomHeight + threshold + 10;
+        }
+
+        if (newRoomX !== this.currentRoomX || newRoomY !== this.currentRoomY) {
+            this.transitionToRoom(newRoomX, newRoomY, newPlayerX, newPlayerY);
+        }
+    }
+
+    transitionToRoom(newRoomX, newRoomY, newPlayerX, newPlayerY) {
+        this.isTransitioning = true;
+        this.myPlayer.setVelocity(0, 0);
+
+        const targetCamX = newRoomX * GAME_CONSTANTS.ROOM_WIDTH + GAME_CONSTANTS.ROOM_WIDTH / 2;
+        const targetCamY = newRoomY * GAME_CONSTANTS.ROOM_HEIGHT + GAME_CONSTANTS.ROOM_HEIGHT / 2;
+
+        this.cameras.main.stopFollow();
+
+        this.add.rectangle(
+            this.cameras.main.scrollX + GAME_CONSTANTS.SCREEN_WIDTH / 2,
+            this.cameras.main.scrollY + GAME_CONSTANTS.SCREEN_HEIGHT / 2,
+            GAME_CONSTANTS.SCREEN_WIDTH,
+            GAME_CONSTANTS.SCREEN_HEIGHT,
+            0x000000, 0
+        ).setDepth(200).setScrollFactor(0);
+
+        this.tweens.add({
+            targets: this.cameras.main,
+            scrollX: targetCamX - GAME_CONSTANTS.SCREEN_WIDTH / 2,
+            scrollY: targetCamY - GAME_CONSTANTS.SCREEN_HEIGHT / 2,
+            duration: GAME_CONSTANTS.TRANSITION_DURATION,
+            ease: 'Power2',
+            onComplete: () => {
+                this.myPlayer.setPosition(newPlayerX, newPlayerY);
+                this.currentRoomX = newRoomX;
+                this.currentRoomY = newRoomY;
+                this.isTransitioning = false;
+                SocketManager.sendMove(this.myPlayer.x, this.myPlayer.y);
+            }
+        });
     }
 
     createRitualCircle() {
@@ -226,21 +309,22 @@ export class GameScene extends Phaser.Scene {
         }
 
         let sprite;
-        if (isChaathan && isMe) {
-            sprite = this.physics.add.sprite(playerData.x, playerData.y, 'player');
-            sprite.setTint(0x8b0000);
-        } else if (isChaathan && !isMe) {
-            sprite = this.physics.add.sprite(playerData.x, playerData.y, 'chaathan-ghost');
-            sprite.setAlpha(0.4);
+        if (isChaathan) {
+            sprite = this.physics.add.sprite(playerData.x, playerData.y, 'chaathan-sprite', 0);
+            sprite.setScale(0.25);
+            if (!isMe) {
+                sprite.setAlpha(0.6);
+            }
         } else {
             sprite = this.physics.add.sprite(playerData.x, playerData.y, 'player');
+            sprite.setScale(1.2);
         }
 
         sprite.setCollideWorldBounds(true);
         sprite.playerId = playerData.id;
         sprite.playerRole = playerData.role;
         sprite.isCarryingItem = playerData.isCarryingItem;
-        sprite.setScale(1.2);
+        sprite.isChaathan = isChaathan;
 
         if (isMe) {
             if (!isChaathan) {
@@ -558,7 +642,10 @@ export class GameScene extends Phaser.Scene {
     update() {
         if (!this.myPlayer) return;
 
-        this.handleMovement();
+        if (!this.isTransitioning) {
+            this.handleMovement();
+            this.checkRoomTransition();
+        }
         this.updateCooldownDisplay();
         this.updateMinimap();
     }
@@ -575,6 +662,23 @@ export class GameScene extends Phaser.Scene {
         else if (this.cursors.down.isDown || this.wasd.down.isDown) vy = speed;
 
         this.myPlayer.setVelocity(vx, vy);
+
+        if (vx < 0) {
+            this.myPlayer.setFlipX(true);
+        } else if (vx > 0) {
+            this.myPlayer.setFlipX(false);
+        }
+
+        if (this.myPlayer.isChaathan) {
+            if (vx !== 0 || vy !== 0) {
+                if (!this.myPlayer.anims.isPlaying) {
+                    this.myPlayer.play('chaathan-walk');
+                }
+            } else {
+                this.myPlayer.stop();
+                this.myPlayer.setFrame(0);
+            }
+        }
 
         if (vx !== 0 || vy !== 0) {
             SocketManager.sendMove(this.myPlayer.x, this.myPlayer.y);
