@@ -31,7 +31,7 @@ jobs:
       - name: Start server
         working-directory: ./server
         run: |
-          echo "Starting Chaathan game server..."
+          echo "Starting Chaathan game server for 3 hours..."
           node index.js > server.log 2>&1 &
           SERVER_PID=$!
           echo "Server started with PID: $SERVER_PID"
@@ -50,8 +50,8 @@ jobs:
             exit 1
           fi
           
-          # Keep the server running for demonstration
-          echo "Server will continue running for $DEMO_DURATION seconds for testing..."
+          # Keep the server running for 3 hours (10800 seconds)
+          echo "Server will continue running for $DEMO_DURATION seconds (3 hours)..."
           sleep $DEMO_DURATION
           
           # Show final logs
@@ -59,7 +59,9 @@ jobs:
           cat server.log
         env:
           PORT: 3000
-          DEMO_DURATION: 300
+          HOST: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          SERVER_DURATION: 10800000
+          DEMO_DURATION: 10800
 
       - name: Server status
         if: always()

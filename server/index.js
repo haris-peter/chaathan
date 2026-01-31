@@ -154,6 +154,53 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || 'localhost';
+const SERVER_DURATION = process.env.SERVER_DURATION || (3 * 60 * 60 * 1000); // 3 hours in milliseconds
+
 server.listen(PORT, () => {
-    console.log(`Chaathan V2 server running on port ${PORT}`);
+    const startTime = new Date();
+    const endTime = new Date(startTime.getTime() + parseInt(SERVER_DURATION));
+    
+    console.log(`
+╔════════════════════════════════════════════════════════════════╗
+║              CHAATHAN V2 SERVER - RUNNING                      ║
+╚════════════════════════════════════════════════════════════════╝
+
+🌐 Server URLs:
+   - Local:    http://localhost:${PORT}
+   - Network:  http://${HOST}:${PORT}
+
+📡 Socket.IO: Ready for connections
+⏱️  Server Start Time: ${startTime.toISOString()}
+⏰  Auto-Shutdown:     ${endTime.toISOString()}
+⏳  Duration:          ${parseInt(SERVER_DURATION) / 1000 / 60 / 60} hours
+
+Waiting for players to connect...
+`);
+
+    // Auto-shutdown after specified duration
+    setTimeout(() => {
+        console.log(`
+╔════════════════════════════════════════════════════════════════╗
+║              SERVER AUTO-SHUTDOWN                              ║
+╚════════════════════════════════════════════════════════════════╝
+
+⏰  Shutdown Time: ${new Date().toISOString()}
+📊  Session Duration: ${parseInt(SERVER_DURATION) / 1000 / 60 / 60} hours completed
+
+Closing all connections...
+`);
+        
+        // Notify all connected clients
+        io.emit('server-shutdown', { 
+            message: 'Server is shutting down after scheduled duration',
+            duration: parseInt(SERVER_DURATION)
+        });
+        
+        // Close server gracefully
+        server.close(() => {
+            console.log('Server closed successfully');
+            process.exit(0);
+        });
+    }, parseInt(SERVER_DURATION));
 });
