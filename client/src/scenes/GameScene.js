@@ -361,8 +361,8 @@ export class GameScene extends Phaser.Scene {
                 sprite.setAlpha(0.6);
             }
         } else {
-            sprite = this.physics.add.sprite(playerData.x, playerData.y, 'player');
-            sprite.setScale(1.2);
+            sprite = this.physics.add.sprite(playerData.x, playerData.y, 'poojari-sprite', 'poojari_1.png');
+            sprite.setScale(0.12);
         }
 
         sprite.setCollideWorldBounds(true);
@@ -724,6 +724,15 @@ export class GameScene extends Phaser.Scene {
             } else {
                 this.myPlayer.stop();
                 this.myPlayer.setFrame('chathan_1.png');
+            }
+        } else {
+            if (vx !== 0 || vy !== 0) {
+                if (!this.myPlayer.anims.isPlaying) {
+                    this.myPlayer.play('poojari-walk');
+                }
+            } else {
+                this.myPlayer.stop();
+                this.myPlayer.setFrame('poojari_1.png');
             }
         }
 

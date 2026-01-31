@@ -1,0 +1,95 @@
+{
+	"frames": {
+		"poojari_1.png": {
+			"frame": {
+				"x": 1,
+				"y": 1,
+				"w": 349,
+				"h": 550
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 349,
+				"h": 550
+			},
+			"sourceSize": {
+				"w": 349,
+				"h": 550
+			}
+		},
+		"poojari_2.png": {
+			"frame": {
+				"x": 352,
+				"y": 1,
+				"w": 349,
+				"h": 550
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 349,
+				"h": 550
+			},
+			"sourceSize": {
+				"w": 349,
+				"h": 550
+			}
+		},
+		"poojari_3.png": {
+			"frame": {
+				"x": 703,
+				"y": 1,
+				"w": 349,
+				"h": 550
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 349,
+				"h": 550
+			},
+			"sourceSize": {
+				"w": 349,
+				"h": 550
+			}
+		},
+		"poojari_4.png": {
+			"frame": {
+				"x": 1054,
+				"y": 1,
+				"w": 349,
+				"h": 550
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 349,
+				"h": 550
+			},
+			"sourceSize": {
+				"w": 349,
+				"h": 550
+			}
+		}
+	},
+	"meta": {
+		"app": "http://www.codeandweb.com/texturepacker",
+		"version": "1.0",
+		"image": "spritesheet.png",
+		"format": "RGBA8888",
+		"size": {
+			"w": 1404,
+			"h": 552
+		},
+		"scale": "1"
+	}
+}

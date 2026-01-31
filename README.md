@@ -187,8 +187,13 @@ npm run dev
 - Animation: `chaathan-walk` at 8fps
 - Scale: 0.25x
 
+### Poojari Sprite
+- `poojari_walk.png` + `poojari_walk.json` - 4-frame walking animation
+- Animation: `poojari-walk` at 8fps
+- Scale: 0.12x
+
 ### Procedural Assets (Generated in BootScene)
-- Player sprite (white humanoid)
+- Player sprite (replaced with custom sprite for Poojaris)
 - Lamps (unlit, lit, flickering states)
 - Doors (open, sealed states)
 - Ritual item, ritual circle, shadow silhouettes

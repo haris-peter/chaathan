@@ -38,6 +38,12 @@ export class BootScene extends Phaser.Scene {
             'assets/sprites/chathan/chathan_walk.json'
         );
 
+        this.load.atlas(
+            'poojari-sprite',
+            'assets/sprites/poojari/poojari_walk.png',
+            'assets/sprites/poojari/poojari_walk.json'
+        );
+
         this.createPlaceholderAssets();
     }
 
@@ -223,6 +229,18 @@ export class BootScene extends Phaser.Scene {
                 { key: 'chaathan-sprite', frame: 'chathan_2.png' },
                 { key: 'chaathan-sprite', frame: 'chathan_3.png' },
                 { key: 'chaathan-sprite', frame: 'chathan_4.png' }
+            ],
+            frameRate: 8,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'poojari-walk',
+            frames: [
+                { key: 'poojari-sprite', frame: 'poojari_1.png' },
+                { key: 'poojari-sprite', frame: 'poojari_2.png' },
+                { key: 'poojari-sprite', frame: 'poojari_3.png' },
+                { key: 'poojari-sprite', frame: 'poojari_4.png' }
             ],
             frameRate: 8,
             repeat: -1
