@@ -30,7 +30,7 @@ jobs:
         working-directory: ./server
         run: |
           echo "Starting Chaathan game server..."
-          nohup node index.js > server.log 2>&1 &
+          node index.js > server.log 2>&1 &
           SERVER_PID=$!
           echo "Server started with PID: $SERVER_PID"
           
@@ -39,7 +39,7 @@ jobs:
           
           # Check if server is running
           if ps -p $SERVER_PID > /dev/null; then
-            echo "✅ Server is running on port ${PORT:-3000}"
+            echo "✅ Server is running on port $PORT"
             echo "Server logs:"
             cat server.log
           else
@@ -49,14 +49,15 @@ jobs:
           fi
           
           # Keep the server running for demonstration
-          echo "Server will continue running for 5 minutes for testing..."
-          sleep 300
+          echo "Server will continue running for $DEMO_DURATION seconds for testing..."
+          sleep $DEMO_DURATION
           
           # Show final logs
           echo "Final server logs:"
           cat server.log
         env:
           PORT: 3000
+          DEMO_DURATION: 300
 
       - name: Server status
         if: always()
