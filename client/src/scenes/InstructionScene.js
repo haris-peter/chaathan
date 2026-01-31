@@ -7,7 +7,6 @@ export class InstructionScene extends Phaser.Scene {
     }
 
     init(data) {
-        this.role = data.role;
         this.playerName = data.name;
     }
 
@@ -17,77 +16,66 @@ export class InstructionScene extends Phaser.Scene {
 
         this.cameras.main.setBackgroundColor('#1a1a1a');
 
-        // Role Title
-        const roleTitleColor = this.role === 'chaathan' ? '#ff0000' : '#ffff00';
-        this.add.text(width / 2, 80, `YOU ARE: ${this.role.toUpperCase()}`, {
-            font: 'bold 40px Courier New',
-            fill: roleTitleColor,
+        this.add.text(width / 2, 60, 'YOU ARE A POOJARI', {
+            font: 'bold 36px Courier New',
+            fill: '#ffff00',
             stroke: '#000000',
             strokeThickness: 6
         }).setOrigin(0.5);
 
-        // Name
-        this.add.text(width / 2, 130, this.playerName, {
-            font: '24px Courier New',
+        this.add.text(width / 2, 100, this.playerName, {
+            font: '22px Courier New',
             fill: '#cccccc'
         }).setOrigin(0.5);
 
-        // Instruction Text
-        let instructionText = '';
-        if (this.role === 'chaathan') {
-            instructionText = `
-GOAL: Stop the ritual!
+        const instructionText = `
+SURVIVE THE TWIN CHAATHANS!
 
-- You are the IMPOSTER.
-- Blend in with the Poojaris.
-- FLICKER lamps to slow them down.
-- SEAL doors to trap them.
-- PUSH them out of the ritual circle.
-- EXTINGUISH lamps to reset their progress.
+🕯️ OBJECTIVE:
+- Light all 4 MINI LAMPS scattered across the map
+- This activates the GRAND LAMP in the center
+- ALL survivors must gather in the Ritual Circle
+- Hold position for 10 seconds to WIN
 
-Ensure the timer runs out before they complete the ritual!
-            `;
-        } else {
-            instructionText = `
-GOAL: Complete the Ritual!
+⚠️ DANGERS:
+- Two AI CHAATHANS patrol the mansion
+- If they catch you, you LOSE A TALISMAN
+- Your LIGHT AURA slowly drains over time
+- If Aura hits 0%, you LOSE A TALISMAN
 
-- Light all 3 sacred LAMPS.
-- Find the RITUAL ITEM (Golden Triangle).
-- Gather ALL Poojaris in the Ritual Circle.
-- Bring the Ritual Item to the center.
-- Hold the position until the ritual completes.
+❤️ TALISMANS (3 Lives):
+- You start with 3 Talismans
+- Lose all 3 = PERMADEATH (become spectator)
+- If ALL players die, the Chaathans win!
 
-Beware of the CHAATHAN hiding among you!
-            `;
-        }
+✨ SURVIVAL:
+- Refuel your Aura at any LIT LAMP (press E)
+- Work together and watch each other's backs!
+        `;
 
-        const instructions = this.add.text(width / 2, height / 2, instructionText, {
-            font: '18px Courier New',
+        this.add.text(width / 2, height / 2 + 20, instructionText, {
+            font: '15px Courier New',
             fill: '#ffffff',
             align: 'center',
-            lineSpacing: 10
+            lineSpacing: 6
         }).setOrigin(0.5);
 
-        // Ready Button
-        this.readyBtn = this.createButton(width / 2, height - 100, 'I AM READY', () => {
+        this.readyBtn = this.createButton(width / 2, height - 70, 'I AM READY', () => {
             this.onReady();
         });
 
-        this.waitingText = this.add.text(width / 2, height - 100, 'Waiting for other players...', {
-            font: '20px Courier New',
+        this.waitingText = this.add.text(width / 2, height - 70, 'Waiting for other players...', {
+            font: '18px Courier New',
             fill: '#888888',
             fontStyle: 'italic'
         }).setOrigin(0.5).setVisible(false);
 
-        // Listen for game start
         SocketManager.on('game-start', (data) => {
-            SocketManager.removeAllListeners(); // Or specific ones if needed
+            SocketManager.removeAllListeners();
             this.scene.start('GameScene', data);
         });
 
-        // Listen for ready updates (optional visual feedback)
         SocketManager.on('player-ready-update', (data) => {
-            // Can update UI here if we want to show "2/4 Ready"
         });
     }
 

@@ -8,7 +8,6 @@ export class EndScene extends Phaser.Scene {
 
     init(data) {
         this.winner = data.winner;
-        this.myRole = data.role;
     }
 
     create() {
@@ -16,15 +15,13 @@ export class EndScene extends Phaser.Scene {
         const height = this.cameras.main.height;
 
         const isPoojariWin = this.winner === 'poojari_win';
-        const iWon = (isPoojariWin && this.myRole === 'poojari') ||
-            (!isPoojariWin && this.myRole === 'chaathan');
 
-        this.cameras.main.setBackgroundColor(iWon ? '#001a00' : '#1a0000');
+        this.cameras.main.setBackgroundColor(isPoojariWin ? '#001a00' : '#1a0000');
 
-        const title = iWon ? 'VICTORY' : 'DEFEAT';
-        const titleColor = iWon ? '#00ff00' : '#ff0000';
+        const title = isPoojariWin ? 'VICTORY' : 'DEFEAT';
+        const titleColor = isPoojariWin ? '#00ff00' : '#ff0000';
 
-        this.add.text(width / 2, 150, title, {
+        this.add.text(width / 2, 120, title, {
             font: 'bold 64px Courier New',
             fill: titleColor,
             stroke: '#000000',
@@ -33,57 +30,55 @@ export class EndScene extends Phaser.Scene {
 
         let message;
         if (isPoojariWin) {
-            message = 'The Poojaris completed the ritual!\nThe Chaathan has been banished.';
+            message = 'The Poojaris completed the ritual!\nThe Twin Chaathans have been banished forever.';
         } else {
-            message = 'Time has run out!\nThe Chaathan claims the tharavad.';
+            message = 'All hope is lost...\nThe Twin Chaathans claim the tharavad.';
         }
 
-        this.add.text(width / 2, 280, message, {
+        this.add.text(width / 2, 250, message, {
             font: '20px Courier New',
             fill: '#cccccc',
             align: 'center'
         }).setOrigin(0.5);
 
-        const roleText = `You were: ${this.myRole.toUpperCase()}`;
-        this.add.text(width / 2, 380, roleText, {
-            font: '16px Courier New',
-            fill: this.myRole === 'chaathan' ? '#880000' : '#008800'
+        const subtitle = isPoojariWin
+            ? '🕯️ The light prevails! 🕯️'
+            : '💀 Darkness consumes all 💀';
+
+        this.add.text(width / 2, 340, subtitle, {
+            font: '24px Courier New',
+            fill: isPoojariWin ? '#ffff00' : '#880000'
         }).setOrigin(0.5);
 
-        const playAgainBtn = this.add.rectangle(width / 2, 480, 200, 50, 0x333333);
+        const playAgainBtn = this.add.rectangle(width / 2, 450, 200, 50, 0x333333);
         playAgainBtn.setInteractive({ useHandCursor: true });
 
-        const btnText = this.add.text(width / 2, 480, 'PLAY AGAIN', {
+        this.add.text(width / 2, 450, 'PLAY AGAIN', {
             font: 'bold 18px Courier New',
             fill: '#ffffff'
         }).setOrigin(0.5);
 
-        playAgainBtn.on('pointerover', () => {
-            playAgainBtn.setFillStyle(0x555555);
-        });
-
-        playAgainBtn.on('pointerout', () => {
-            playAgainBtn.setFillStyle(0x333333);
-        });
-
+        playAgainBtn.on('pointerover', () => playAgainBtn.setFillStyle(0x555555));
+        playAgainBtn.on('pointerout', () => playAgainBtn.setFillStyle(0x333333));
         playAgainBtn.on('pointerdown', () => {
             SocketManager.disconnect();
             this.scene.start('LobbyScene');
         });
 
-        this.createAmbientEffects();
+        this.createAmbientEffects(isPoojariWin);
     }
 
-    createAmbientEffects() {
+    createAmbientEffects(isWin) {
         const particles = this.add.graphics();
 
-        for (let i = 0; i < 20; i++) {
+        for (let i = 0; i < 30; i++) {
             const x = Phaser.Math.Between(0, 800);
             const y = Phaser.Math.Between(0, 600);
-            const alpha = Phaser.Math.FloatBetween(0.1, 0.3);
-            const size = Phaser.Math.Between(1, 3);
+            const alpha = Phaser.Math.FloatBetween(0.1, 0.4);
+            const size = Phaser.Math.Between(1, 4);
 
-            particles.fillStyle(0xffffff, alpha);
+            const color = isWin ? 0xffff00 : 0xff0000;
+            particles.fillStyle(color, alpha);
             particles.fillCircle(x, y, size);
         }
     }

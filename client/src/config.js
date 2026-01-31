@@ -36,16 +36,24 @@ export const GAME_CONSTANTS = {
     EDGE_THRESHOLD: 32,
     PLAYER_SPEED: 200,
     INTERACTION_DISTANCE: 60,
+
+    TALISMAN_COUNT: 3,
+    AURA_MAX: 100,
+
     RITUAL_CIRCLE: {
-        x: 2100,
-        y: 1500,
-        radius: 80
+        x: 1200,
+        y: 900,
+        radius: 100
     },
+
     LAMP_POSITIONS: [
-        { x: 400, y: 300 },
-        { x: 1200, y: 900 },
-        { x: 2000, y: 300 }
+        { x: 400, y: 300, type: 'mini' },
+        { x: 2000, y: 300, type: 'mini' },
+        { x: 400, y: 1500, type: 'mini' },
+        { x: 2000, y: 1500, type: 'mini' },
+        { x: 1200, y: 900, type: 'grand' }
     ],
+
     DOOR_POSITIONS: [
         { x: 800, y: 300 },
         { x: 800, y: 900 },
@@ -60,12 +68,11 @@ export const GAME_CONSTANTS = {
         { x: 1200, y: 1200 },
         { x: 2000, y: 1200 }
     ],
-    SPAWN_POINTS: {
-        POOJARI: [
-            { x: 200, y: 200 },
-            { x: 200, y: 900 },
-            { x: 200, y: 1600 }
-        ],
-        CHAATHAN: { x: 2200, y: 1600 }
-    }
+
+    SPAWN_POINTS: [
+        { x: 200, y: 200 },
+        { x: 200, y: 600 },
+        { x: 600, y: 200 },
+        { x: 600, y: 600 }
+    ]
 };

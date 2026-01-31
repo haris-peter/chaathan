@@ -22,7 +22,6 @@ io.on('connection', (socket) => {
 
     socket.on('join-game', (playerName) => {
         console.log(`[${socket.id}] Quick join requested: ${playerName}`);
-        // Quick join
         const { room, player } = gameManager.joinRoom(socket.id, playerName);
 
         if (!player) {
@@ -88,7 +87,6 @@ io.on('connection', (socket) => {
         if (!room || room.gameState !== GAME_STATES.INSTRUCTIONS) return;
 
         if (room.setPlayerReady(socket.id)) {
-            // Notify others that this player is ready (optional, but good for UI)
             io.to(room.roomId).emit('player-ready-update', {
                 playerId: socket.id,
                 readyCount: Array.from(room.players.values()).filter(p => p.ready).length
@@ -100,11 +98,8 @@ io.on('connection', (socket) => {
                     room.players.forEach((p, id) => {
                         io.to(id).emit('game-start', {
                             ...state,
-                            yourRole: p.role,
-                            players: state.players.map(pl => ({
-                                ...pl,
-                                role: pl.id === id ? pl.role : (p.role === 'chaathan' ? pl.role : undefined)
-                            }))
+                            yourId: id,
+                            players: state.players
                         });
                     });
                 }
@@ -117,17 +112,12 @@ io.on('connection', (socket) => {
         if (!room || room.gameState !== GAME_STATES.PLAYING) return;
 
         const player = room.updatePlayerPosition(socket.id, x, y);
-        if (player) {
+        if (player && player.isAlive) {
             socket.to(room.roomId).emit('player-moved', {
                 playerId: socket.id,
                 x,
-                y,
-                isCarryingItem: player.isCarryingItem
+                y
             });
-
-            if (player.role !== 'chaathan') {
-                room.checkRitualCircle(io);
-            }
         }
     });
 
@@ -135,97 +125,19 @@ io.on('connection', (socket) => {
         const room = gameManager.getPlayerRoom(socket.id);
         if (!room || room.gameState !== GAME_STATES.PLAYING) return;
 
-        const result = room.lightLamp(lampId, socket.id);
+        const result = room.lightLamp(lampId, socket.id, io);
         if (result) {
             io.to(room.roomId).emit('lamp-update', result);
-            room.checkRitualCircle(io);
         }
     });
 
-    socket.on('chaathan-flicker', (lampId) => {
+    socket.on('refuel-aura', (lampId) => {
         const room = gameManager.getPlayerRoom(socket.id);
         if (!room || room.gameState !== GAME_STATES.PLAYING) return;
 
-        const player = room.players.get(socket.id);
-        if (player?.role !== 'chaathan') return;
-
-        const result = room.flickerLamp(lampId, io);
+        const result = room.refuelAura(socket.id, lampId);
         if (result) {
-            io.to(room.roomId).emit('lamp-update', result.lamp);
-            socket.emit('cooldown-update', { ability: 'flicker', cooldownEnd: result.cooldownEnd });
-        }
-    });
-
-    socket.on('chaathan-extinguish', (lampId) => {
-        const room = gameManager.getPlayerRoom(socket.id);
-        if (!room || room.gameState !== GAME_STATES.PLAYING) return;
-
-        const player = room.players.get(socket.id);
-        if (player?.role !== 'chaathan') return;
-
-        const result = room.extinguishLamp(lampId, io);
-        if (result) {
-            io.to(room.roomId).emit('lamp-update', result.lamp);
-            socket.emit('cooldown-update', { ability: 'extinguish', cooldownEnd: result.cooldownEnd });
-        }
-    });
-
-    socket.on('chaathan-seal-door', (doorId) => {
-        const room = gameManager.getPlayerRoom(socket.id);
-        if (!room || room.gameState !== GAME_STATES.PLAYING) return;
-
-        const player = room.players.get(socket.id);
-        if (player?.role !== 'chaathan') return;
-
-        const result = room.sealDoor(doorId, io);
-        if (result) {
-            io.to(room.roomId).emit('door-update', result.door);
-            socket.emit('cooldown-update', { ability: 'seal', cooldownEnd: result.cooldownEnd });
-        }
-    });
-
-    socket.on('chaathan-push', (targetId) => {
-        const room = gameManager.getPlayerRoom(socket.id);
-        if (!room || room.gameState !== GAME_STATES.PLAYING) return;
-
-        const player = room.players.get(socket.id);
-        if (player?.role !== 'chaathan') return;
-
-        const result = room.pushPlayer(targetId, io);
-        if (result) {
-            io.to(room.roomId).emit('player-pushed', {
-                playerId: targetId,
-                x: result.target.x,
-                y: result.target.y
-            });
-            socket.emit('cooldown-update', { ability: 'push', cooldownEnd: result.cooldownEnd });
-        }
-    });
-
-    socket.on('pickup-item', () => {
-        const room = gameManager.getPlayerRoom(socket.id);
-        if (!room || room.gameState !== GAME_STATES.PLAYING) return;
-
-        const result = room.pickupItem(socket.id);
-        if (result) {
-            io.to(room.roomId).emit('item-pickup', {
-                playerId: socket.id,
-                item: result.item
-            });
-        }
-    });
-
-    socket.on('drop-item', () => {
-        const room = gameManager.getPlayerRoom(socket.id);
-        if (!room || room.gameState !== GAME_STATES.PLAYING) return;
-
-        const result = room.dropItem(socket.id);
-        if (result) {
-            io.to(room.roomId).emit('item-drop', {
-                playerId: socket.id,
-                item: result.item
-            });
-            room.checkRitualCircle(io);
+            io.to(socket.id).emit('aura-update', result);
         }
     });
 
@@ -235,13 +147,6 @@ io.on('connection', (socket) => {
 
         if (room) {
             socket.to(room.roomId).emit('player-left', { playerId: socket.id });
-
-            if (room.gameState === GAME_STATES.PLAYING) {
-                const player = room.players.get(socket.id);
-                if (player?.role === 'chaathan') {
-                    room.endGame(io, GAME_STATES.POOJARI_WIN);
-                }
-            }
         }
 
         gameManager.leaveRoom(socket.id);
@@ -250,5 +155,5 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-    console.log(`Chaathan server running on port ${PORT}`);
+    console.log(`Chaathan V2 server running on port ${PORT}`);
 });

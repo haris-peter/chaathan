@@ -22,8 +22,8 @@ export class LobbyScene extends Phaser.Scene {
             strokeThickness: 4
         }).setOrigin(0.5);
 
-        this.add.text(width / 2, 140, 'The Haunting', {
-            font: '24px Courier New',
+        this.add.text(width / 2, 140, 'Twin Terror Survival', {
+            font: '22px Courier New',
             fill: '#666666'
         }).setOrigin(0.5);
 

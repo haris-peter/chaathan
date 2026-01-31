@@ -50,7 +50,6 @@ class SocketManagerClass {
 
     emit(event, data) {
         if (this.socket) {
-            console.log(`[SocketManager] Emitting ${event}`, data);
             this.socket.emit(event, data);
         } else {
             console.warn(`[SocketManager] Cannot emit ${event} - socket not initialized`);
@@ -59,7 +58,6 @@ class SocketManagerClass {
 
     on(event, callback) {
         if (this.socket) {
-            // console.log(`[SocketManager] Registering listener for ${event}`);
             this.socket.on(event, callback);
             if (!this.listeners.has(event)) {
                 this.listeners.set(event, []);
@@ -87,21 +85,18 @@ class SocketManagerClass {
     }
 
     joinGame(playerName) {
-        console.log(`[SocketManager] joinGame called for ${playerName}`);
         this.emit('join-game', playerName);
     }
+
     createRoom(playerName, duration) {
-        console.log(`[SocketManager] createRoom called for ${playerName} duration ${duration}`);
         this.emit('create-room', { playerName, duration });
     }
 
     sendReady() {
-        console.log('[SocketManager] Sending player-ready');
         this.emit('player-ready');
     }
 
     joinSpecificRoom(playerName, roomId) {
-        console.log(`[SocketManager] joinSpecificRoom called for ${playerName} in room ${roomId}`);
         this.emit('join-specific-room', { playerName, roomId });
     }
 
@@ -113,28 +108,8 @@ class SocketManagerClass {
         this.emit('light-lamp', lampId);
     }
 
-    pickupItem() {
-        this.emit('pickup-item');
-    }
-
-    dropItem() {
-        this.emit('drop-item');
-    }
-
-    chaathanFlicker(lampId) {
-        this.emit('chaathan-flicker', lampId);
-    }
-
-    chaathanExtinguish(lampId) {
-        this.emit('chaathan-extinguish', lampId);
-    }
-
-    chaathanSealDoor(doorId) {
-        this.emit('chaathan-seal-door', doorId);
-    }
-
-    chaathanPush(targetId) {
-        this.emit('chaathan-push', targetId);
+    refuelAura(lampId) {
+        this.emit('refuel-aura', lampId);
     }
 }
 
