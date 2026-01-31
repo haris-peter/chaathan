@@ -32,10 +32,11 @@ export class BootScene extends Phaser.Scene {
             loadingText.destroy();
         });
 
-        this.load.spritesheet('chaathan-sprite', 'assets/sprites/chaathan_sprite.png', {
-            frameWidth: 160,
-            frameHeight: 200
-        });
+        this.load.atlas(
+            'chaathan-sprite',
+            'assets/sprites/chathan/chathan_walk.png',
+            'assets/sprites/chathan/chathan_walk.json'
+        );
 
         this.createPlaceholderAssets();
     }
@@ -217,7 +218,12 @@ export class BootScene extends Phaser.Scene {
     create() {
         this.anims.create({
             key: 'chaathan-walk',
-            frames: this.anims.generateFrameNumbers('chaathan-sprite', { start: 0, end: 3 }),
+            frames: [
+                { key: 'chaathan-sprite', frame: 'chathan_1.png' },
+                { key: 'chaathan-sprite', frame: 'chathan_2.png' },
+                { key: 'chaathan-sprite', frame: 'chathan_3.png' },
+                { key: 'chaathan-sprite', frame: 'chathan_4.png' }
+            ],
             frameRate: 8,
             repeat: -1
         });

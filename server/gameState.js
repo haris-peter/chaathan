@@ -59,8 +59,16 @@ export class GameRoom {
         return [
             { id: 0, x: 800, y: 300, state: DOOR_STATES.OPEN, sealTimer: null },
             { id: 1, x: 800, y: 900, state: DOOR_STATES.OPEN, sealTimer: null },
-            { id: 2, x: 1600, y: 600, state: DOOR_STATES.OPEN, sealTimer: null },
-            { id: 3, x: 1600, y: 1200, state: DOOR_STATES.OPEN, sealTimer: null }
+            { id: 2, x: 800, y: 1500, state: DOOR_STATES.OPEN, sealTimer: null },
+            { id: 3, x: 1600, y: 300, state: DOOR_STATES.OPEN, sealTimer: null },
+            { id: 4, x: 1600, y: 900, state: DOOR_STATES.OPEN, sealTimer: null },
+            { id: 5, x: 1600, y: 1500, state: DOOR_STATES.OPEN, sealTimer: null },
+            { id: 6, x: 400, y: 600, state: DOOR_STATES.OPEN, sealTimer: null },
+            { id: 7, x: 1200, y: 600, state: DOOR_STATES.OPEN, sealTimer: null },
+            { id: 8, x: 2000, y: 600, state: DOOR_STATES.OPEN, sealTimer: null },
+            { id: 9, x: 400, y: 1200, state: DOOR_STATES.OPEN, sealTimer: null },
+            { id: 10, x: 1200, y: 1200, state: DOOR_STATES.OPEN, sealTimer: null },
+            { id: 11, x: 2000, y: 1200, state: DOOR_STATES.OPEN, sealTimer: null }
         ];
     }
 

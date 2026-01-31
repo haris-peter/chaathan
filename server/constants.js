@@ -2,7 +2,7 @@ export const GAME_DURATION = 300000;
 export const RITUAL_DURATION = 10000;
 export const MAX_PLAYERS = 4;
 export const LAMP_COUNT = 3;
-export const DOOR_COUNT = 4;
+export const DOOR_COUNT = 12;
 
 export const COOLDOWNS = {
   FLICKER_LAMP: 5000,

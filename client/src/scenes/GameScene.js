@@ -181,24 +181,67 @@ export class GameScene extends Phaser.Scene {
         let newPlayerY = playerY;
 
         if (playerX < roomLeft + threshold && this.currentRoomX > 0) {
-            newRoomX = this.currentRoomX - 1;
-            newPlayerX = (newRoomX + 1) * roomWidth - threshold - 10;
+            if (this.hasDoorBetweenRooms(this.currentRoomX - 1, this.currentRoomY, 'horizontal', playerY)) {
+                newRoomX = this.currentRoomX - 1;
+                newPlayerX = (newRoomX + 1) * roomWidth - threshold - 10;
+            }
         } else if (playerX > roomRight - threshold && this.currentRoomX < GAME_CONSTANTS.ROOM_COLS - 1) {
-            newRoomX = this.currentRoomX + 1;
-            newPlayerX = newRoomX * roomWidth + threshold + 10;
+            if (this.hasDoorBetweenRooms(this.currentRoomX, this.currentRoomY, 'horizontal', playerY)) {
+                newRoomX = this.currentRoomX + 1;
+                newPlayerX = newRoomX * roomWidth + threshold + 10;
+            }
         }
 
         if (playerY < roomTop + threshold && this.currentRoomY > 0) {
-            newRoomY = this.currentRoomY - 1;
-            newPlayerY = (newRoomY + 1) * roomHeight - threshold - 10;
+            if (this.hasDoorBetweenRooms(this.currentRoomX, this.currentRoomY - 1, 'vertical', playerX)) {
+                newRoomY = this.currentRoomY - 1;
+                newPlayerY = (newRoomY + 1) * roomHeight - threshold - 10;
+            }
         } else if (playerY > roomBottom - threshold && this.currentRoomY < GAME_CONSTANTS.ROOM_ROWS - 1) {
-            newRoomY = this.currentRoomY + 1;
-            newPlayerY = newRoomY * roomHeight + threshold + 10;
+            if (this.hasDoorBetweenRooms(this.currentRoomX, this.currentRoomY, 'vertical', playerX)) {
+                newRoomY = this.currentRoomY + 1;
+                newPlayerY = newRoomY * roomHeight + threshold + 10;
+            }
         }
 
         if (newRoomX !== this.currentRoomX || newRoomY !== this.currentRoomY) {
             this.transitionToRoom(newRoomX, newRoomY, newPlayerX, newPlayerY);
         }
+    }
+
+    hasDoorBetweenRooms(roomX, roomY, direction, playerPos) {
+        const doorProximity = 80;
+
+        for (const door of this.gameData.doors) {
+            if (direction === 'horizontal') {
+                const wallX = (roomX + 1) * GAME_CONSTANTS.ROOM_WIDTH;
+                const roomTop = roomY * GAME_CONSTANTS.ROOM_HEIGHT;
+                const roomBottom = roomTop + GAME_CONSTANTS.ROOM_HEIGHT;
+
+                if (Math.abs(door.x - wallX) < 50 && door.y >= roomTop && door.y < roomBottom) {
+                    if (Math.abs(playerPos - door.y) < doorProximity) {
+                        const doorSprite = this.doors.get(door.id);
+                        if (!doorSprite || doorSprite.doorState !== 'sealed') {
+                            return true;
+                        }
+                    }
+                }
+            } else {
+                const wallY = (roomY + 1) * GAME_CONSTANTS.ROOM_HEIGHT;
+                const roomLeft = roomX * GAME_CONSTANTS.ROOM_WIDTH;
+                const roomRight = roomLeft + GAME_CONSTANTS.ROOM_WIDTH;
+
+                if (Math.abs(door.y - wallY) < 50 && door.x >= roomLeft && door.x < roomRight) {
+                    if (Math.abs(playerPos - door.x) < doorProximity) {
+                        const doorSprite = this.doors.get(door.id);
+                        if (!doorSprite || doorSprite.doorState !== 'sealed') {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     transitionToRoom(newRoomX, newRoomY, newPlayerX, newPlayerY) {
@@ -310,8 +353,8 @@ export class GameScene extends Phaser.Scene {
 
         let sprite;
         if (isChaathan) {
-            sprite = this.physics.add.sprite(playerData.x, playerData.y, 'chaathan-sprite', 0);
-            sprite.setScale(0.25);
+            sprite = this.physics.add.sprite(playerData.x, playerData.y, 'chaathan-sprite', 'chathan_1.png');
+            sprite.setScale(0.12);
             if (!isMe) {
                 sprite.setAlpha(0.6);
             }
@@ -676,7 +719,7 @@ export class GameScene extends Phaser.Scene {
                 }
             } else {
                 this.myPlayer.stop();
-                this.myPlayer.setFrame(0);
+                this.myPlayer.setFrame('chathan_1.png');
             }
         }
 
