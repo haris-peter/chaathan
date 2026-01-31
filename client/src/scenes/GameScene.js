@@ -343,18 +343,40 @@ export class GameScene extends Phaser.Scene {
 
     createLamps() {
         this.lamps = [];
+        const miniLampScale = 0.15;
 
         this.gameData.lamps.forEach((lampData) => {
             const isGrand = lampData.type === 'grand';
-            const size = isGrand ? 30 : 20;
-            const color = lampData.state === 'lit' ? (isGrand ? 0xffd700 : 0xffaa00) : 0x444444;
+            let lamp;
 
-            const lamp = this.add.circle(lampData.x, lampData.y, size, color);
-            lamp.setStrokeStyle(2, isGrand ? 0xffd700 : 0x885500);
+            if (isGrand) {
+                const size = 30;
+                const color = lampData.state === 'lit' ? 0xffd700 : 0x444444;
+                lamp = this.add.circle(lampData.x, lampData.y, size, color);
+                lamp.setStrokeStyle(2, 0xffd700);
+            } else {
+                if (lampData.state === 'lit' && this.textures.exists('mini-lamp-lit')) {
+                    lamp = this.add.sprite(lampData.x, lampData.y, 'mini-lamp-lit', 'mini_lamp_1.png');
+                    lamp.setScale(miniLampScale);
+                    if (this.anims.exists('mini-lamp-flame')) {
+                        lamp.play('mini-lamp-flame');
+                    }
+                } else if (this.textures.exists('mini-lamp-unlit')) {
+                    lamp = this.add.image(lampData.x, lampData.y, 'mini-lamp-unlit');
+                    lamp.setScale(miniLampScale);
+                } else {
+                    const size = 20;
+                    const color = lampData.state === 'lit' ? 0xffaa00 : 0x444444;
+                    lamp = this.add.circle(lampData.x, lampData.y, size, color);
+                    lamp.setStrokeStyle(2, 0x885500);
+                }
+            }
+
             lamp.setInteractive();
             lamp.lampId = lampData.id;
             lamp.lampType = lampData.type;
             lamp.state = lampData.state;
+            lamp.isSprite = !isGrand && this.textures.exists('mini-lamp-unlit');
 
             lamp.on('pointerdown', () => this.onLampClick(lamp));
 
@@ -880,13 +902,17 @@ export class GameScene extends Phaser.Scene {
     }
 
     updateLamp(lampData) {
-        const lamp = this.lamps.find(l => l.lampId === lampData.id);
-        if (lamp) {
-            lamp.state = lampData.state;
-            const isGrand = lampData.type === 'grand';
-            if (lampData.state === 'lit') {
-                lamp.setFillStyle(isGrand ? 0xffd700 : 0xffaa00);
+        const lampIndex = this.lamps.findIndex(l => l.lampId === lampData.id);
+        if (lampIndex === -1) return;
 
+        const lamp = this.lamps[lampIndex];
+        const isGrand = lampData.type === 'grand';
+        const miniLampScale = 0.15;
+
+        if (lampData.state === 'lit') {
+            if (isGrand) {
+                lamp.state = lampData.state;
+                lamp.setFillStyle(0xffd700);
                 this.tweens.add({
                     targets: lamp,
                     scaleX: 1.2,
@@ -894,7 +920,53 @@ export class GameScene extends Phaser.Scene {
                     duration: 200,
                     yoyo: true
                 });
+            } else if (lamp.isSprite && this.textures.exists('mini-lamp-lit')) {
+                const x = lamp.x;
+                const y = lamp.y;
+                const lampId = lamp.lampId;
+                const lampType = lamp.lampType;
+
+                lamp.destroy();
+
+                const newLamp = this.add.sprite(x, y, 'mini-lamp-lit', 'mini_lamp_1.png');
+                newLamp.setScale(miniLampScale);
+                newLamp.setInteractive();
+                newLamp.lampId = lampId;
+                newLamp.lampType = lampType;
+                newLamp.state = 'lit';
+                newLamp.isSprite = true;
+
+                if (this.anims.exists('mini-lamp-flame')) {
+                    newLamp.play('mini-lamp-flame');
+                }
+
+                newLamp.on('pointerdown', () => this.onLampClick(newLamp));
+
+                this.lamps[lampIndex] = newLamp;
+
+                this.tweens.add({
+                    targets: newLamp,
+                    scaleX: miniLampScale * 1.2,
+                    scaleY: miniLampScale * 1.2,
+                    duration: 200,
+                    yoyo: true
+                });
             } else {
+                lamp.state = lampData.state;
+                if (lamp.setFillStyle) {
+                    lamp.setFillStyle(0xffaa00);
+                }
+                this.tweens.add({
+                    targets: lamp,
+                    scaleX: 1.2,
+                    scaleY: 1.2,
+                    duration: 200,
+                    yoyo: true
+                });
+            }
+        } else {
+            lamp.state = lampData.state;
+            if (!lamp.isSprite && lamp.setFillStyle) {
                 lamp.setFillStyle(0x444444);
             }
         }

@@ -1,0 +1,95 @@
+{
+	"frames": {
+		"mini_lamp_1.png": {
+			"frame": {
+				"x": 1,
+				"y": 1,
+				"w": 350,
+				"h": 550
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 350,
+				"h": 550
+			},
+			"sourceSize": {
+				"w": 350,
+				"h": 550
+			}
+		},
+		"mini_lamp_2.png": {
+			"frame": {
+				"x": 353,
+				"y": 1,
+				"w": 350,
+				"h": 550
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 350,
+				"h": 550
+			},
+			"sourceSize": {
+				"w": 350,
+				"h": 550
+			}
+		},
+		"mini_lamp_3.png": {
+			"frame": {
+				"x": 705,
+				"y": 1,
+				"w": 350,
+				"h": 550
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 350,
+				"h": 550
+			},
+			"sourceSize": {
+				"w": 350,
+				"h": 550
+			}
+		},
+		"mini_lamp_4.png": {
+			"frame": {
+				"x": 1057,
+				"y": 1,
+				"w": 350,
+				"h": 550
+			},
+			"rotated": false,
+			"trimmed": false,
+			"spriteSourceSize": {
+				"x": 0,
+				"y": 0,
+				"w": 350,
+				"h": 550
+			},
+			"sourceSize": {
+				"w": 350,
+				"h": 550
+			}
+		}
+	},
+	"meta": {
+		"app": "http://www.codeandweb.com/texturepacker",
+		"version": "1.0",
+		"image": "mini_lamp_flame.png",
+		"format": "RGBA8888",
+		"size": {
+			"w": 1408,
+			"h": 552
+		},
+		"scale": "1"
+	}
+}

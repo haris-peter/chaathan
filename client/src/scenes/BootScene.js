@@ -44,6 +44,14 @@ export class BootScene extends Phaser.Scene {
             'assets/sprites/poojari/poojari_walk.json'
         );
 
+        this.load.image('mini-lamp-unlit', 'assets/sprites/mini_lamp/mini_lamp_no_flame.png');
+
+        this.load.atlas(
+            'mini-lamp-lit',
+            'assets/sprites/mini_lamp/mini_lamp_flame.png',
+            'assets/sprites/mini_lamp/mini_lamp_flame.json'
+        );
+
         this.load.image('poster', 'assets/poster.png');
         this.createPlaceholderAssets();
     }
@@ -242,6 +250,18 @@ export class BootScene extends Phaser.Scene {
                 { key: 'poojari-sprite', frame: 'poojari_2.png' },
                 { key: 'poojari-sprite', frame: 'poojari_3.png' },
                 { key: 'poojari-sprite', frame: 'poojari_4.png' }
+            ],
+            frameRate: 8,
+            repeat: -1
+        });
+
+        this.anims.create({
+            key: 'mini-lamp-flame',
+            frames: [
+                { key: 'mini-lamp-lit', frame: 'mini_lamp_1.png' },
+                { key: 'mini-lamp-lit', frame: 'mini_lamp_2.png' },
+                { key: 'mini-lamp-lit', frame: 'mini_lamp_3.png' },
+                { key: 'mini-lamp-lit', frame: 'mini_lamp_4.png' }
             ],
             frameRate: 8,
             repeat: -1
