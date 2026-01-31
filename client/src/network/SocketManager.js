@@ -6,14 +6,17 @@ class SocketManagerClass {
         this.listeners = new Map();
     }
 
-    connect(serverUrl = 'http://localhost:3000') {
-        console.log(`[SocketManager] Connecting to ${serverUrl}...`);
+    connect(serverUrl) {
+        // Use provided URL, or environment variable, or default to localhost
+        const url = serverUrl || import.meta.env.VITE_SERVER_URL || 'http://localhost:3000';
+        
+        console.log(`[SocketManager] Connecting to ${url}...`);
         if (this.socket?.connected) {
             console.log('[SocketManager] Already connected');
             return this.socket;
         }
 
-        this.socket = io(serverUrl, {
+        this.socket = io(url, {
             transports: ['websocket', 'polling'],
             reconnection: true,
             reconnectionAttempts: 5,
@@ -35,6 +38,16 @@ class SocketManagerClass {
 
         this.socket.on('error', (error) => {
             console.error('[SocketManager] Socket error:', error);
+        });
+
+        this.socket.on('server-shutdown', (data) => {
+            console.warn('[SocketManager] Server is shutting down:', data);
+            // TODO: Replace with proper in-game notification system (toast/overlay)
+            // Using confirm dialog as a temporary solution to avoid blocking alert()
+            // This provides better UX by allowing users to reload and reconnect
+            if (window.confirm(`Server is shutting down: ${data.message}\n\nClick OK to reload and reconnect.`)) {
+                window.location.reload();
+            }
         });
 
         return this.socket;

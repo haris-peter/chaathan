@@ -17,6 +17,10 @@ const io = new Server(server, {
 
 const gameManager = new GameManager();
 
+// Server configuration constants
+const DEFAULT_SERVER_DURATION_MS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+const MAX_SERVER_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours maximum
+
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
 
@@ -154,6 +158,75 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || 'localhost';
+
+// Parse and validate SERVER_DURATION
+let serverDuration = DEFAULT_SERVER_DURATION_MS;
+if (process.env.SERVER_DURATION) {
+    const parsed = parseInt(process.env.SERVER_DURATION, 10);
+    if (parsed === 0) {
+        serverDuration = 0; // Disable auto-shutdown
+    } else if (!isNaN(parsed) && parsed > 0 && parsed <= MAX_SERVER_DURATION_MS) {
+        serverDuration = parsed;
+    } else if (!isNaN(parsed) && parsed > MAX_SERVER_DURATION_MS) {
+        console.warn(`SERVER_DURATION exceeds maximum (${MAX_SERVER_DURATION_MS}ms = 24 hours). Using default: ${DEFAULT_SERVER_DURATION_MS}ms`);
+    } else {
+        console.warn(`Invalid SERVER_DURATION value: ${process.env.SERVER_DURATION}. Using default: ${DEFAULT_SERVER_DURATION_MS}ms`);
+    }
+}
+
 server.listen(PORT, () => {
-    console.log(`Chaathan V2 server running on port ${PORT}`);
+    const startTime = new Date();
+    
+    console.log(`
+╔════════════════════════════════════════════════════════════════╗
+║              CHAATHAN V2 SERVER - RUNNING                      ║
+╚════════════════════════════════════════════════════════════════╝
+
+🌐 Server URLs:
+   - Local:    http://localhost:${PORT}
+   - Network:  http://${HOST}:${PORT}
+
+📡 Socket.IO: Ready for connections
+⏱️  Server Start Time: ${startTime.toISOString()}`);
+    
+    if (serverDuration > 0) {
+        const endTime = new Date(startTime.getTime() + serverDuration);
+        console.log(`⏰  Auto-Shutdown:     ${endTime.toISOString()}
+⏳  Duration:          ${serverDuration / 1000 / 60 / 60} hours`);
+    } else {
+        console.log(`⏰  Auto-Shutdown:     Disabled`);
+    }
+    
+    console.log(`
+Waiting for players to connect...
+`);
+
+    // Auto-shutdown after specified duration (if enabled)
+    if (serverDuration > 0) {
+        setTimeout(() => {
+            console.log(`
+╔════════════════════════════════════════════════════════════════╗
+║              SERVER AUTO-SHUTDOWN                              ║
+╚════════════════════════════════════════════════════════════════╝
+
+⏰  Shutdown Time: ${new Date().toISOString()}
+📊  Session Duration: ${serverDuration / 1000 / 60 / 60} hours completed
+
+Closing all connections...
+`);
+            
+            // Notify all connected clients
+            io.emit('server-shutdown', { 
+                message: 'Server is shutting down after scheduled duration',
+                duration: serverDuration
+            });
+            
+            // Close server gracefully
+            server.close(() => {
+                console.log('Server closed successfully');
+                process.exit(0);
+            });
+        }, serverDuration);
+    }
 });

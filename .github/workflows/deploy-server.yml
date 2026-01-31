@@ -1,0 +1,74 @@
+name: Deploy Server
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: server/package-lock.json
+
+      - name: Install server dependencies
+        working-directory: ./server
+        run: npm ci
+
+      - name: Start server
+        working-directory: ./server
+        run: |
+          echo "Starting Chaathan game server for 3 hours..."
+          node index.js > server.log 2>&1 &
+          SERVER_PID=$!
+          echo "Server started with PID: $SERVER_PID"
+          
+          # Wait for server to start
+          sleep 5
+          
+          # Check if server is running
+          if ps -p $SERVER_PID > /dev/null; then
+            echo "✅ Server is running on port $PORT"
+            echo "Server logs:"
+            cat server.log
+          else
+            echo "❌ Server failed to start"
+            cat server.log
+            exit 1
+          fi
+          
+          # Keep the server running for 3 hours (10800 seconds)
+          echo "Server will continue running for $DEMO_DURATION seconds (3 hours)..."
+          sleep $DEMO_DURATION
+          
+          # Show final logs
+          echo "Final server logs:"
+          cat server.log
+        env:
+          PORT: 3000
+          HOST: localhost
+          SERVER_DURATION: 10800000
+          DEMO_DURATION: 10800
+
+      - name: Server status
+        if: always()
+        working-directory: ./server
+        run: |
+          echo "Deployment summary:"
+          if [ -f server.log ]; then
+            echo "Last 50 lines of server log:"
+            tail -n 50 server.log
+          fi

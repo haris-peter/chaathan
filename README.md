@@ -129,11 +129,14 @@ npm install
 
 ### Running the Game
 
+#### Local Development
+
 **Terminal 1 - Server:**
 ```bash
 cd server
 npm start
 # Server runs on http://localhost:3000
+# Server will auto-shutdown after 3 hours
 ```
 
 **Terminal 2 - Client:**
@@ -141,6 +144,27 @@ npm start
 cd client
 npm run dev
 # Client runs on http://localhost:5173
+```
+
+#### Configuration
+
+**Server Configuration:**
+Create a `.env` file in the `server/` directory (see `.env.example`):
+```env
+PORT=3000                      # Server port
+HOST=localhost                 # Host/domain name
+SERVER_DURATION=10800000       # Auto-shutdown after 3 hours (in ms)
+```
+
+**Client Configuration:**
+Create a `.env` file in the `client/` directory (see `.env.example`):
+```env
+VITE_SERVER_URL=http://localhost:3000    # Server URL to connect to
+```
+
+For production deployments, set `VITE_SERVER_URL` to your hosted server URL:
+```env
+VITE_SERVER_URL=https://your-server.com:3000
 ```
 
 ### Playing
@@ -156,6 +180,49 @@ npm run dev
 4. **Game Phase**:
    - Game starts automatically when ALL players are ready
    - One player becomes Chaathan, others are Poojaris
+
+---
+
+## 🚀 Deployment
+
+### GitHub Actions
+
+The server can be automatically deployed using GitHub Actions. The workflow is configured to:
+
+1. **Trigger on**:
+   - Push to `main` or `master` branch
+   - Manual workflow dispatch
+
+2. **Deployment Steps**:
+   - Checkout code
+   - Set up Node.js 18
+   - Install server dependencies
+   - Start the server on port 3000
+   - Run for 3 hours (10,800 seconds)
+   - Server displays proper hosting URLs on startup
+   - Auto-shutdown after 3 hours
+
+To manually trigger the deployment:
+1. Go to the **Actions** tab in your GitHub repository
+2. Select **Deploy Server** workflow
+3. Click **Run workflow**
+
+The workflow file is located at `.github/workflows/deploy-server.yml`.
+
+**Important Notes:**
+- The server is configured to run for 3 hours by default
+- Server displays both local and network URLs on startup
+- The server will automatically shut down after the configured duration
+- All connected clients will be notified before shutdown
+
+**Note**: For production deployments, consider using a cloud platform like:
+- Heroku
+- Railway
+- Render
+- DigitalOcean
+- AWS/GCP/Azure
+
+These platforms provide persistent hosting with proper SSL certificates and domain management.
 
 ---
 
