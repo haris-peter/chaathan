@@ -24,6 +24,14 @@ import {
     AI_LOSE_SIGHT_DISTANCE
 } from './constants.js';
 
+const MAP_WIDTH = 4000;
+const MAP_HEIGHT = 3000;
+const ROOM_WIDTH = 800;
+const ROOM_HEIGHT = 600;
+const ROOM_COLS = 5;
+const ROOM_ROWS = 5;
+const TILE_SIZE = 32;
+
 class AIChaathan {
     constructor(id, startX, startY, roomBounds) {
         this.id = id;
@@ -35,7 +43,83 @@ class AIChaathan {
         this.roomBounds = roomBounds;
         this.lastDirectionChange = 0;
         this.direction = { x: 0, y: 0 };
+        this.doorOpenings = this.buildDoorOpeningsMap();
         this.pickNewPatrolTarget();
+    }
+
+    buildDoorOpeningsMap() {
+        const doorMap = new Map();
+        const doorPositions = this.getDoorPositions();
+
+        doorPositions.forEach(door => {
+            const doorTileX = Math.floor(door.x / TILE_SIZE);
+            const doorTileY = Math.floor(door.y / TILE_SIZE);
+
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    const key = `${doorTileX + dx},${doorTileY + dy}`;
+                    doorMap.set(key, true);
+                }
+            }
+        });
+
+        return doorMap;
+    }
+
+    getDoorPositions() {
+        return [
+            { x: 800, y: 300 }, { x: 1600, y: 300 }, { x: 2400, y: 300 }, { x: 3200, y: 300 },
+            { x: 800, y: 900 }, { x: 1600, y: 900 }, { x: 2400, y: 900 }, { x: 3200, y: 900 },
+            { x: 800, y: 1500 }, { x: 1600, y: 1500 }, { x: 2400, y: 1500 }, { x: 3200, y: 1500 },
+            { x: 800, y: 2100 }, { x: 1600, y: 2100 }, { x: 2400, y: 2100 }, { x: 3200, y: 2100 },
+            { x: 800, y: 2700 }, { x: 1600, y: 2700 }, { x: 2400, y: 2700 }, { x: 3200, y: 2700 },
+            { x: 400, y: 600 }, { x: 1200, y: 600 }, { x: 2000, y: 600 }, { x: 2800, y: 600 }, { x: 3600, y: 600 },
+            { x: 400, y: 1200 }, { x: 1200, y: 1200 }, { x: 2000, y: 1200 }, { x: 2800, y: 1200 }, { x: 3600, y: 1200 },
+            { x: 400, y: 1800 }, { x: 1200, y: 1800 }, { x: 2000, y: 1800 }, { x: 2800, y: 1800 }, { x: 3600, y: 1800 },
+            { x: 400, y: 2400 }, { x: 1200, y: 2400 }, { x: 2000, y: 2400 }, { x: 2800, y: 2400 }, { x: 3600, y: 2400 }
+        ];
+    }
+
+    isWallTile(tileX, tileY) {
+        const roomWidthTiles = ROOM_WIDTH / TILE_SIZE;
+        const roomHeightTiles = ROOM_HEIGHT / TILE_SIZE;
+        const localX = tileX % roomWidthTiles;
+        const localY = tileY % roomHeightTiles;
+
+        const isEdge = localX === 0 || localX === roomWidthTiles - 1 ||
+            localY === 0 || localY === roomHeightTiles - 1;
+
+        if (!isEdge) {
+            return false;
+        }
+
+        const key = `${tileX},${tileY}`;
+        if (this.doorOpenings.has(key)) {
+            return false;
+        }
+
+        return true;
+    }
+
+    canMoveTo(x, y) {
+        const radius = 20;
+        const checkPoints = [
+            { x: x - radius, y: y - radius },
+            { x: x + radius, y: y - radius },
+            { x: x - radius, y: y + radius },
+            { x: x + radius, y: y + radius }
+        ];
+
+        for (const point of checkPoints) {
+            const tileX = Math.floor(point.x / TILE_SIZE);
+            const tileY = Math.floor(point.y / TILE_SIZE);
+
+            if (this.isWallTile(tileX, tileY)) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     pickNewPatrolTarget() {
@@ -84,8 +168,19 @@ class AIChaathan {
 
             const speed = AI_PATROL_SPEED * (deltaTime / 1000);
             const angle = Math.atan2(this.patrolTarget.y - this.y, this.patrolTarget.x - this.x);
-            this.x += Math.cos(angle) * speed;
-            this.y += Math.sin(angle) * speed;
+            const newX = this.x + Math.cos(angle) * speed;
+            const newY = this.y + Math.sin(angle) * speed;
+
+            if (this.canMoveTo(newX, newY)) {
+                this.x = newX;
+                this.y = newY;
+            } else if (this.canMoveTo(newX, this.y)) {
+                this.x = newX;
+            } else if (this.canMoveTo(this.x, newY)) {
+                this.y = newY;
+            } else {
+                this.pickNewPatrolTarget();
+            }
 
         } else if (this.state === CHAATHAN_STATES.HUNT) {
             const target = players.get(this.targetPlayerId);
@@ -108,8 +203,17 @@ class AIChaathan {
 
             const speed = AI_CHASE_SPEED * (deltaTime / 1000);
             const angle = Math.atan2(target.y - this.y, target.x - this.x);
-            this.x += Math.cos(angle) * speed;
-            this.y += Math.sin(angle) * speed;
+            const newX = this.x + Math.cos(angle) * speed;
+            const newY = this.y + Math.sin(angle) * speed;
+
+            if (this.canMoveTo(newX, newY)) {
+                this.x = newX;
+                this.y = newY;
+            } else if (this.canMoveTo(newX, this.y)) {
+                this.x = newX;
+            } else if (this.canMoveTo(this.x, newY)) {
+                this.y = newY;
+            }
         }
 
         this.x = Math.max(50, Math.min(this.roomBounds.width - 50, this.x));
@@ -151,8 +255,8 @@ export class GameRoom {
         this.lamps = this.initLamps();
         this.doors = this.initDoors();
         this.ritualCircle = {
-            x: 1200,
-            y: 900,
+            x: 2000,
+            y: 1500,
             radius: 100,
             playersInside: new Set(),
             progress: 0,
@@ -160,46 +264,74 @@ export class GameRoom {
             isActive: false
         };
         this.aiChaathans = [];
-        this.roomBounds = { width: 2400, height: 1800 };
+        this.roomBounds = { width: MAP_WIDTH, height: MAP_HEIGHT };
         this.spawnPoints = [
             { x: 200, y: 200 },
-            { x: 200, y: 600 },
-            { x: 600, y: 200 },
-            { x: 600, y: 600 }
+            { x: 200, y: 400 },
+            { x: 400, y: 200 },
+            { x: 400, y: 400 }
         ];
     }
 
     initLamps() {
         return [
             { id: 0, x: 400, y: 300, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
-            { id: 1, x: 2000, y: 300, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
-            { id: 2, x: 400, y: 1500, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
-            { id: 3, x: 2000, y: 1500, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
-            { id: 4, x: 1200, y: 900, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.GRAND }
+            { id: 1, x: 3600, y: 300, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
+            { id: 2, x: 400, y: 2700, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
+            { id: 3, x: 3600, y: 2700, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
+            { id: 4, x: 2000, y: 1500, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.GRAND }
         ];
     }
 
     initDoors() {
         return [
-            { id: 0, x: 800, y: 300, state: DOOR_STATES.OPEN },
-            { id: 1, x: 800, y: 900, state: DOOR_STATES.OPEN },
-            { id: 2, x: 800, y: 1500, state: DOOR_STATES.OPEN },
-            { id: 3, x: 1600, y: 300, state: DOOR_STATES.OPEN },
-            { id: 4, x: 1600, y: 900, state: DOOR_STATES.OPEN },
-            { id: 5, x: 1600, y: 1500, state: DOOR_STATES.OPEN },
-            { id: 6, x: 400, y: 600, state: DOOR_STATES.OPEN },
-            { id: 7, x: 1200, y: 600, state: DOOR_STATES.OPEN },
-            { id: 8, x: 2000, y: 600, state: DOOR_STATES.OPEN },
-            { id: 9, x: 400, y: 1200, state: DOOR_STATES.OPEN },
-            { id: 10, x: 1200, y: 1200, state: DOOR_STATES.OPEN },
-            { id: 11, x: 2000, y: 1200, state: DOOR_STATES.OPEN }
+            { id: 0, x: 800, y: 300, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 1, x: 1600, y: 300, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 2, x: 2400, y: 300, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 3, x: 3200, y: 300, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 4, x: 800, y: 900, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 5, x: 1600, y: 900, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 6, x: 2400, y: 900, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 7, x: 3200, y: 900, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 8, x: 800, y: 1500, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 9, x: 1600, y: 1500, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 10, x: 2400, y: 1500, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 11, x: 3200, y: 1500, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 12, x: 800, y: 2100, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 13, x: 1600, y: 2100, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 14, x: 2400, y: 2100, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 15, x: 3200, y: 2100, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 16, x: 800, y: 2700, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 17, x: 1600, y: 2700, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 18, x: 2400, y: 2700, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 19, x: 3200, y: 2700, state: DOOR_STATES.OPEN, orientation: 'vertical' },
+            { id: 20, x: 400, y: 600, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 21, x: 1200, y: 600, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 22, x: 2000, y: 600, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 23, x: 2800, y: 600, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 24, x: 3600, y: 600, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 25, x: 400, y: 1200, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 26, x: 1200, y: 1200, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 27, x: 2000, y: 1200, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 28, x: 2800, y: 1200, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 29, x: 3600, y: 1200, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 30, x: 400, y: 1800, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 31, x: 1200, y: 1800, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 32, x: 2000, y: 1800, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 33, x: 2800, y: 1800, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 34, x: 3600, y: 1800, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 35, x: 400, y: 2400, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 36, x: 1200, y: 2400, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 37, x: 2000, y: 2400, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 38, x: 2800, y: 2400, state: DOOR_STATES.OPEN, orientation: 'horizontal' },
+            { id: 39, x: 3600, y: 2400, state: DOOR_STATES.OPEN, orientation: 'horizontal' }
         ];
     }
 
     initAIChaathans() {
         this.aiChaathans = [
-            new AIChaathan(0, 2200, 300, this.roomBounds),
-            new AIChaathan(1, 2200, 1500, this.roomBounds)
+            new AIChaathan(0, 3600, 300, this.roomBounds),
+            new AIChaathan(1, 3600, 2700, this.roomBounds)
         ];
     }
 

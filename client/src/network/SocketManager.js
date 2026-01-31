@@ -6,7 +6,7 @@ class SocketManagerClass {
         this.listeners = new Map();
     }
 
-    connect(serverUrl = 'https://chaathan-server.onrender.com') {
+    connect(serverUrl = 'http://localhost:3000') {
         console.log(`[SocketManager] Connecting to ${serverUrl}...`);
         if (this.socket?.connected) {
             console.log('[SocketManager] Already connected');

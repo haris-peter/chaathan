@@ -23,6 +23,26 @@ export class GameScene extends Phaser.Scene {
         this.ritualProgress = 0;
         this.ritualTotal = 10000;
         this.grandLampActive = false;
+        this.doorOpenings = this.buildDoorOpeningsMap();
+    }
+
+    buildDoorOpeningsMap() {
+        const doorMap = new Map();
+        const tileSize = GAME_CONSTANTS.TILE_SIZE;
+
+        GAME_CONSTANTS.DOOR_POSITIONS.forEach(door => {
+            const doorTileX = Math.floor(door.x / tileSize);
+            const doorTileY = Math.floor(door.y / tileSize);
+
+            for (let dx = -1; dx <= 1; dx++) {
+                for (let dy = -1; dy <= 1; dy++) {
+                    const key = `${doorTileX + dx},${doorTileY + dy}`;
+                    doorMap.set(key, true);
+                }
+            }
+        });
+
+        return doorMap;
     }
 
     create() {
@@ -103,11 +123,61 @@ export class GameScene extends Phaser.Scene {
         return false;
     }
 
+    canMoveTo(x, y) {
+        const tileSize = GAME_CONSTANTS.TILE_SIZE;
+        const playerRadius = 15;
+
+        const checkPoints = [
+            { x: x - playerRadius, y: y - playerRadius },
+            { x: x + playerRadius, y: y - playerRadius },
+            { x: x - playerRadius, y: y + playerRadius },
+            { x: x + playerRadius, y: y + playerRadius },
+            { x: x, y: y - playerRadius },
+            { x: x, y: y + playerRadius },
+            { x: x - playerRadius, y: y },
+            { x: x + playerRadius, y: y }
+        ];
+
+        for (const point of checkPoints) {
+            const tileX = Math.floor(point.x / tileSize);
+            const tileY = Math.floor(point.y / tileSize);
+
+            if (this.isWallTileForCollision(tileX, tileY, tileSize)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    isWallTileForCollision(tileX, tileY, tileSize) {
+        const roomWidth = GAME_CONSTANTS.ROOM_WIDTH / tileSize;
+        const roomHeight = GAME_CONSTANTS.ROOM_HEIGHT / tileSize;
+        const localX = tileX % roomWidth;
+        const localY = tileY % roomHeight;
+
+        const isEdge = localX === 0 || localX === roomWidth - 1 ||
+            localY === 0 || localY === roomHeight - 1;
+
+        if (!isEdge) {
+            return false;
+        }
+
+        const key = `${tileX},${tileY}`;
+        if (this.doorOpenings.has(key)) {
+            return false;
+        }
+
+        return true;
+    }
+
     addRoomLabels() {
         const rooms = [
-            'Entrance Hall', 'Main Hall', 'East Wing',
-            'West Chamber', 'Central Room', 'Ancestors Hall',
-            'Storage', 'Kitchen', 'Pooja Room'
+            'Entrance Hall', 'Main Hall', 'East Wing', 'Grand Gallery', 'Tower East',
+            'West Chamber', 'Central Room', 'Ancestors Hall', 'Library', 'Study',
+            'Storage', 'Kitchen', 'Pooja Room', 'Garden', 'Chapel',
+            'Cellar', 'Wine Room', 'Shrine', 'Courtyard', 'Stable',
+            'Dungeon', 'Crypt', 'Secret Room', 'Treasury', 'Tower West'
         ];
 
         let index = 0;
@@ -115,7 +185,7 @@ export class GameScene extends Phaser.Scene {
             for (let col = 0; col < GAME_CONSTANTS.ROOM_COLS; col++) {
                 const x = col * GAME_CONSTANTS.ROOM_WIDTH + GAME_CONSTANTS.ROOM_WIDTH / 2;
                 const y = row * GAME_CONSTANTS.ROOM_HEIGHT + 40;
-                this.add.text(x, y, rooms[index], {
+                this.add.text(x, y, rooms[index] || `Room ${index + 1}`, {
                     font: '16px Courier New',
                     fill: '#444444'
                 }).setOrigin(0.5);
@@ -195,25 +265,40 @@ export class GameScene extends Phaser.Scene {
         const doorPositions = GAME_CONSTANTS.DOOR_POSITIONS;
         const roomWidth = GAME_CONSTANTS.ROOM_WIDTH;
         const roomHeight = GAME_CONSTANTS.ROOM_HEIGHT;
+        const doorCheckDistance = 80;
+
+        const currentRoomLeft = roomX * roomWidth;
+        const currentRoomTop = roomY * roomHeight;
 
         for (const door of doorPositions) {
-            const doorRoomX = Math.floor(door.x / roomWidth);
-            const doorRoomY = Math.floor(door.y / roomHeight);
-
-            if (direction === 'left' && doorRoomX === roomX - 1 && doorRoomY === roomY) {
-                if (Math.abs(door.y - playerPos.y) < 100) return true;
+            if (direction === 'left') {
+                if (Math.abs(door.x - currentRoomLeft) < 10 &&
+                    Math.abs(door.y - playerPos.y) < doorCheckDistance) {
+                    return true;
+                }
             }
-            if (direction === 'right' && (doorRoomX === roomX || doorRoomX === roomX + 1) && doorRoomY === roomY) {
-                if (door.x > roomX * roomWidth + roomWidth - 50 && Math.abs(door.y - playerPos.y) < 100) return true;
+            if (direction === 'right') {
+                const rightEdge = currentRoomLeft + roomWidth;
+                if (Math.abs(door.x - rightEdge) < 10 &&
+                    Math.abs(door.y - playerPos.y) < doorCheckDistance) {
+                    return true;
+                }
             }
-            if (direction === 'up' && doorRoomX === roomX && doorRoomY === roomY - 1) {
-                if (Math.abs(door.x - playerPos.x) < 100) return true;
+            if (direction === 'up') {
+                if (Math.abs(door.y - currentRoomTop) < 10 &&
+                    Math.abs(door.x - playerPos.x) < doorCheckDistance) {
+                    return true;
+                }
             }
-            if (direction === 'down' && doorRoomX === roomX && (doorRoomY === roomY || doorRoomY === roomY + 1)) {
-                if (door.y > roomY * roomHeight + roomHeight - 50 && Math.abs(door.x - playerPos.x) < 100) return true;
+            if (direction === 'down') {
+                const bottomEdge = currentRoomTop + roomHeight;
+                if (Math.abs(door.y - bottomEdge) < 10 &&
+                    Math.abs(door.x - playerPos.x) < doorCheckDistance) {
+                    return true;
+                }
             }
         }
-        return true;
+        return false;
     }
 
     transitionToRoom(newRoomX, newRoomY, newPlayerX, newPlayerY) {
@@ -281,7 +366,12 @@ export class GameScene extends Phaser.Scene {
         this.doors = [];
 
         this.gameData.doors.forEach((doorData) => {
-            const door = this.add.rectangle(doorData.x, doorData.y, 60, 20, 0x654321);
+            const isVertical = doorData.orientation === 'vertical' ||
+                (doorData.x % GAME_CONSTANTS.ROOM_WIDTH < 50 ||
+                    doorData.x % GAME_CONSTANTS.ROOM_WIDTH > GAME_CONSTANTS.ROOM_WIDTH - 50);
+            const width = isVertical ? 20 : 60;
+            const height = isVertical ? 60 : 20;
+            const door = this.add.rectangle(doorData.x, doorData.y, width, height, 0x654321);
             door.setStrokeStyle(2, 0x8b4513);
             door.doorId = doorData.id;
             door.state = doorData.state;
@@ -424,7 +514,7 @@ export class GameScene extends Phaser.Scene {
     createMinimap() {
         const minimapX = 700;
         const minimapY = 500;
-        const minimapScale = 0.05;
+        const minimapScale = 0.03;
 
         this.minimapContainer = this.add.container(minimapX, minimapY);
         this.minimapContainer.setScrollFactor(0).setDepth(100);
@@ -438,6 +528,7 @@ export class GameScene extends Phaser.Scene {
 
         this.minimapDots = [];
         this.minimapChaathanDots = [];
+        this.minimapScale = minimapScale;
     }
 
     updateMinimap() {
@@ -447,7 +538,7 @@ export class GameScene extends Phaser.Scene {
         this.minimapChaathanDots.forEach(d => d.destroy());
         this.minimapChaathanDots = [];
 
-        const scale = 0.05;
+        const scale = this.minimapScale;
         const offsetX = -GAME_CONSTANTS.MAP_WIDTH * scale / 2;
         const offsetY = -GAME_CONSTANTS.MAP_HEIGHT * scale / 2;
 
@@ -549,6 +640,8 @@ export class GameScene extends Phaser.Scene {
 
         SocketManager.on('player-respawn', (data) => {
             if (data.playerId === this.myId) {
+                this.isTransitioning = true;
+
                 const sprite = this.players.get(this.myId);
                 if (sprite) {
                     sprite.x = data.x;
@@ -561,11 +654,21 @@ export class GameScene extends Phaser.Scene {
                 this.myAura = data.aura;
                 this.updateAuraDisplay();
 
-                this.currentRoomX = Math.floor(data.x / GAME_CONSTANTS.ROOM_WIDTH);
-                this.currentRoomY = Math.floor(data.y / GAME_CONSTANTS.ROOM_HEIGHT);
-                this.setCameraToRoom(this.currentRoomX, this.currentRoomY);
+                const newRoomX = Math.floor(data.x / GAME_CONSTANTS.ROOM_WIDTH);
+                const newRoomY = Math.floor(data.y / GAME_CONSTANTS.ROOM_HEIGHT);
+
+                const camX = newRoomX * GAME_CONSTANTS.ROOM_WIDTH;
+                const camY = newRoomY * GAME_CONSTANTS.ROOM_HEIGHT;
+                this.cameras.main.setScroll(camX, camY);
+
+                this.currentRoomX = newRoomX;
+                this.currentRoomY = newRoomY;
 
                 this.showMessage('You respawned!', 0xff6666);
+
+                this.time.delayedCall(300, () => {
+                    this.isTransitioning = false;
+                });
             } else {
                 const sprite = this.players.get(data.playerId);
                 if (sprite) {
@@ -707,21 +810,34 @@ export class GameScene extends Phaser.Scene {
 
         if (vx !== 0 || vy !== 0) {
             const speed = GAME_CONSTANTS.PLAYER_SPEED / 60;
-            const newX = mySprite.x + vx * speed;
-            const newY = mySprite.y + vy * speed;
+            let newX = mySprite.x + vx * speed;
+            let newY = mySprite.y + vy * speed;
 
-            const clampedX = Phaser.Math.Clamp(newX, 50, GAME_CONSTANTS.MAP_WIDTH - 50);
-            const clampedY = Phaser.Math.Clamp(newY, 50, GAME_CONSTANTS.MAP_HEIGHT - 50);
+            newX = Phaser.Math.Clamp(newX, 50, GAME_CONSTANTS.MAP_WIDTH - 50);
+            newY = Phaser.Math.Clamp(newY, 50, GAME_CONSTANTS.MAP_HEIGHT - 50);
 
-            mySprite.x = clampedX;
-            mySprite.y = clampedY;
-
-            if (mySprite.nameTag) {
-                mySprite.nameTag.x = clampedX;
-                mySprite.nameTag.y = clampedY - 30;
+            if (vx !== 0 && vy !== 0) {
+                if (this.canMoveTo(newX, newY)) {
+                    mySprite.x = newX;
+                    mySprite.y = newY;
+                } else if (this.canMoveTo(newX, mySprite.y)) {
+                    mySprite.x = newX;
+                } else if (this.canMoveTo(mySprite.x, newY)) {
+                    mySprite.y = newY;
+                }
+            } else {
+                if (this.canMoveTo(newX, newY)) {
+                    mySprite.x = newX;
+                    mySprite.y = newY;
+                }
             }
 
-            SocketManager.sendMove(clampedX, clampedY);
+            if (mySprite.nameTag) {
+                mySprite.nameTag.x = mySprite.x;
+                mySprite.nameTag.y = mySprite.y - 30;
+            }
+
+            SocketManager.sendMove(mySprite.x, mySprite.y);
         }
     }
 
