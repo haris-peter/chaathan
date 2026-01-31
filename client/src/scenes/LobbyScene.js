@@ -55,8 +55,13 @@ export class LobbyScene extends Phaser.Scene {
 
         // Create Room Button
         const createBtn = this.createButton(width / 2, height / 2 + 20, 'Create Room', () => {
-            this.statusText.setText('Creating room...');
-            SocketManager.createRoom(this.playerName);
+            const durationStr = prompt('Enter Game Duration in minutes (default 5):', '5');
+            let duration = parseInt(durationStr);
+            if (isNaN(duration) || duration < 1) duration = 5;
+            if (duration > 60) duration = 60; // Max 60 mins
+
+            this.statusText.setText(`Creating ${duration} min room...`);
+            SocketManager.createRoom(this.playerName, duration * 60 * 1000);
         });
         this.mainMenuContainer.add(createBtn);
 
@@ -200,8 +205,15 @@ export class LobbyScene extends Phaser.Scene {
             this.updatePlayerCount(this.playerCount);
         });
 
+        SocketManager.on('show-instructions', (data) => {
+            console.log('[LobbyScene] Received show-instructions:', data);
+            SocketManager.removeAllListeners(); // Clean up lobby listeners
+            this.scene.start('InstructionScene', data);
+        });
+
         SocketManager.on('game-start', (data) => {
-            console.log('[LobbyScene] Received game-start:', data);
+            // Backup just in case logic bypasses instructions (shouldn't happen now)
+            console.log('[LobbyScene] Received game-start (unexpected):', data);
             SocketManager.removeAllListeners();
             this.scene.start('GameScene', data);
         });

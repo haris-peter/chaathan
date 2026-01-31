@@ -90,9 +90,14 @@ class SocketManagerClass {
         console.log(`[SocketManager] joinGame called for ${playerName}`);
         this.emit('join-game', playerName);
     }
-    createRoom(playerName) {
-        console.log(`[SocketManager] createRoom called for ${playerName}`);
-        this.emit('create-room', { playerName });
+    createRoom(playerName, duration) {
+        console.log(`[SocketManager] createRoom called for ${playerName} duration ${duration}`);
+        this.emit('create-room', { playerName, duration });
+    }
+
+    sendReady() {
+        console.log('[SocketManager] Sending player-ready');
+        this.emit('player-ready');
     }
 
     joinSpecificRoom(playerName, roomId) {

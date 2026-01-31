@@ -13,11 +13,12 @@ import {
 } from './constants.js';
 
 export class GameRoom {
-    constructor(roomId) {
+    constructor(roomId, duration) {
         this.roomId = roomId;
         this.players = new Map();
         this.gameState = GAME_STATES.WAITING;
-        this.timeRemaining = GAME_DURATION;
+        this.timeRemaining = duration || GAME_DURATION;
+        this.initialDuration = duration || GAME_DURATION;
         this.timerInterval = null;
         this.lamps = this.initLamps();
         this.doors = this.initDoors();
@@ -79,6 +80,7 @@ export class GameRoom {
             id: socketId,
             name: playerName || `Player${this.players.size + 1}`,
             role: null,
+            ready: false,
             x: 400,
             y: 300,
             isCarryingItem: false
@@ -118,12 +120,36 @@ export class GameRoom {
         });
     }
 
-    startGame(io) {
-        if (this.players.size !== MAX_PLAYERS) return false;
-
+    startInstructions(io) {
         this.assignRoles();
+        this.gameState = GAME_STATES.INSTRUCTIONS;
+
+        this.players.forEach((player, socketId) => {
+            io.to(socketId).emit('show-instructions', {
+                role: player.role,
+                name: player.name
+            });
+        });
+    }
+
+    setPlayerReady(socketId) {
+        const player = this.players.get(socketId);
+        if (player) {
+            player.ready = true;
+            return true;
+        }
+        return false;
+    }
+
+    allPlayersReady() {
+        return Array.from(this.players.values()).every(p => p.ready);
+    }
+
+    startGame(io) {
+        if (this.gameState !== GAME_STATES.INSTRUCTIONS) return false;
+
         this.gameState = GAME_STATES.PLAYING;
-        this.timeRemaining = GAME_DURATION;
+        this.timeRemaining = this.initialDuration;
 
         this.timerInterval = setInterval(() => {
             this.timeRemaining -= 1000;

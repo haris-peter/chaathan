@@ -31,7 +31,9 @@ chaathan/
 │   │   │   └── SocketManager.js   # Socket.IO client wrapper
 │   │   └── scenes/
 │   │       ├── BootScene.js      # Asset loading & animations
-│   │       ├── LobbyScene.js     # Multiplayer lobby
+│   │       ├── TitleScene.js     # Game Title & Start
+│   │       ├── LobbyScene.js     # Multiplayer lobby & Room Management
+│   │       ├── InstructionScene.js # Role instructions & Ready check
 │   │       ├── GameScene.js      # Main gameplay
 │   │       └── EndScene.js       # Win/lose screen
 │   ├── index.html
@@ -143,9 +145,17 @@ npm run dev
 
 ### Playing
 1. Open http://localhost:5173 in 4 browser tabs
-2. Enter player names and click "Join Game"
-3. First player to join can start the game when 4 players are ready
-4. One player becomes Chaathan, others are Poojaris
+2. **Lobby Phase**:
+   - create a Room (optional: set custom duration) OR
+   - Enter a Room ID to join a specific room OR
+   - Click "Quick Join" to find an open room
+3. **Instruction Phase**:
+   - Once 4 players join, everyone sees their Role (Poojari/Chaathan)
+   - Read your objective carefully
+   - Click "I AM READY" when prepared
+4. **Game Phase**:
+   - Game starts automatically when ALL players are ready
+   - One player becomes Chaathan, others are Poojaris
 
 ---
 
@@ -154,7 +164,10 @@ npm run dev
 ### Client → Server
 | Event | Data | Description |
 |-------|------|-------------|
-| `join-game` | `{ playerName }` | Join lobby |
+| `create-room` | `{ playerName, duration }` | Create new private room |
+| `join-specific-room` | `{ playerName, roomId }` | Join specific room ID |
+| `join-game` | `{ playerName }` | Quick join lobby |
+| `player-ready` | - | Player confirms readiness |
 | `start-game` | - | Host starts game |
 | `player-move` | `{ x, y }` | Position update |
 | `light-lamp` | `{ lampId }` | Poojari lights lamp |
@@ -168,6 +181,8 @@ npm run dev
 ### Server → Client
 | Event | Data | Description |
 |-------|------|-------------|
+| `show-instructions` | `{ role, name }` | Transition to instructions |
+| `player-ready-update` | `{ playerId, readyCount }` | Sync ready status |
 | `game-start` | `{ players, lamps, doors, ... }` | Game initialization |
 | `player-moved` | `{ playerId, x, y }` | Player position sync |
 | `lamp-update` | `{ id, state }` | Lamp state change |
@@ -243,6 +258,9 @@ PLAYER_SPEED: 200
 - [x] Hollow Knight-style room transitions (camera pans when moving between rooms)
 - [x] Custom Chaathan Sprite Animation (TexturePacker Atlas)
 - [x] Role-Based Minimap (Poojaris are blind)
+- [x] **Room System** (Create, Join, Private Codes)
+- [x] **Instruction Phase** (Role Reveal & Ready Check)
+- [x] **Server Registry** (Live room monitoring)
 
 ### 🔲 Planned
 - [ ] Sound effects and music

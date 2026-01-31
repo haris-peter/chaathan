@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene.js';
 import { TitleScene } from './scenes/TitleScene.js';
 import { LobbyScene } from './scenes/LobbyScene.js';
+import { InstructionScene } from './scenes/InstructionScene.js';
 import { GameScene } from './scenes/GameScene.js';
 import { EndScene } from './scenes/EndScene.js';
 
@@ -18,7 +19,7 @@ export const gameConfig = {
             debug: false
         }
     },
-    scene: [BootScene, TitleScene, LobbyScene, GameScene, EndScene]
+    scene: [BootScene, TitleScene, LobbyScene, InstructionScene, GameScene, EndScene]
 };
 
 export const GAME_CONSTANTS = {

@@ -33,9 +33,9 @@ io.on('connection', (socket) => {
         joinRoomSuccess(socket, room, player);
     });
 
-    socket.on('create-room', ({ playerName }) => {
-        console.log(`[${socket.id}] Create room requested: ${playerName}`);
-        const { room, player, error } = gameManager.createNewRoom(socket.id, playerName);
+    socket.on('create-room', ({ playerName, duration }) => {
+        console.log(`[${socket.id}] Create room requested: ${playerName} duration ${duration}`);
+        const { room, player, error } = gameManager.createNewRoom(socket.id, playerName, duration);
 
         if (error) {
             console.error(`[${socket.id}] Create room failed: ${error}`);
@@ -79,21 +79,38 @@ io.on('connection', (socket) => {
 
     function checkGameStart(room) {
         if (room.players.size === MAX_PLAYERS) {
-            if (room.startGame(io)) {
-                const state = room.getState();
-                room.players.forEach((p, id) => {
-                    io.to(id).emit('game-start', {
-                        ...state,
-                        yourRole: p.role,
-                        players: state.players.map(pl => ({
-                            ...pl,
-                            role: pl.id === id ? pl.role : (p.role === 'chaathan' ? pl.role : undefined)
-                        }))
-                    });
-                });
-            }
+            room.startInstructions(io);
         }
     }
+
+    socket.on('player-ready', () => {
+        const room = gameManager.getPlayerRoom(socket.id);
+        if (!room || room.gameState !== GAME_STATES.INSTRUCTIONS) return;
+
+        if (room.setPlayerReady(socket.id)) {
+            // Notify others that this player is ready (optional, but good for UI)
+            io.to(room.roomId).emit('player-ready-update', {
+                playerId: socket.id,
+                readyCount: Array.from(room.players.values()).filter(p => p.ready).length
+            });
+
+            if (room.allPlayersReady()) {
+                if (room.startGame(io)) {
+                    const state = room.getState();
+                    room.players.forEach((p, id) => {
+                        io.to(id).emit('game-start', {
+                            ...state,
+                            yourRole: p.role,
+                            players: state.players.map(pl => ({
+                                ...pl,
+                                role: pl.id === id ? pl.role : (p.role === 'chaathan' ? pl.role : undefined)
+                            }))
+                        });
+                    });
+                }
+            }
+        }
+    });
 
     socket.on('player-move', ({ x, y }) => {
         const room = gameManager.getPlayerRoom(socket.id);

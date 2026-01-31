@@ -29,6 +29,7 @@ export const DOOR_STATES = {
 
 export const GAME_STATES = {
   WAITING: 'waiting',
+  INSTRUCTIONS: 'instructions',
   PLAYING: 'playing',
   POOJARI_WIN: 'poojari_win',
   CHAATHAN_WIN: 'chaathan_win'
