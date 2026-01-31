@@ -19,6 +19,7 @@ const gameManager = new GameManager();
 
 // Server configuration constants
 const DEFAULT_SERVER_DURATION_MS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+const MAX_SERVER_DURATION_MS = 24 * 60 * 60 * 1000; // 24 hours maximum
 
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
@@ -163,10 +164,12 @@ const HOST = process.env.HOST || 'localhost';
 let serverDuration = DEFAULT_SERVER_DURATION_MS;
 if (process.env.SERVER_DURATION) {
     const parsed = parseInt(process.env.SERVER_DURATION, 10);
-    if (!isNaN(parsed) && parsed > 0) {
-        serverDuration = parsed;
-    } else if (parsed === 0) {
+    if (parsed === 0) {
         serverDuration = 0; // Disable auto-shutdown
+    } else if (!isNaN(parsed) && parsed > 0 && parsed <= MAX_SERVER_DURATION_MS) {
+        serverDuration = parsed;
+    } else if (!isNaN(parsed) && parsed > MAX_SERVER_DURATION_MS) {
+        console.warn(`SERVER_DURATION exceeds maximum (${MAX_SERVER_DURATION_MS}ms = 24 hours). Using default: ${DEFAULT_SERVER_DURATION_MS}ms`);
     } else {
         console.warn(`Invalid SERVER_DURATION value: ${process.env.SERVER_DURATION}. Using default: ${DEFAULT_SERVER_DURATION_MS}ms`);
     }
