@@ -42,7 +42,11 @@ class SocketManagerClass {
 
         this.socket.on('server-shutdown', (data) => {
             console.warn('[SocketManager] Server is shutting down:', data);
-            alert(`Server is shutting down: ${data.message}`);
+            // Note: In a production game, you would want to show an in-game overlay
+            // or toast notification instead of an alert
+            if (window.confirm(`Server is shutting down: ${data.message}\n\nClick OK to reload and reconnect.`)) {
+                window.location.reload();
+            }
         });
 
         return this.socket;

@@ -17,6 +17,9 @@ const io = new Server(server, {
 
 const gameManager = new GameManager();
 
+// Server configuration constants
+const DEFAULT_SERVER_DURATION_MS = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+
 io.on('connection', (socket) => {
     console.log(`Player connected: ${socket.id}`);
 
@@ -155,11 +158,22 @@ io.on('connection', (socket) => {
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || 'localhost';
-const SERVER_DURATION = process.env.SERVER_DURATION || (3 * 60 * 60 * 1000); // 3 hours in milliseconds
+
+// Parse and validate SERVER_DURATION
+let serverDuration = DEFAULT_SERVER_DURATION_MS;
+if (process.env.SERVER_DURATION) {
+    const parsed = parseInt(process.env.SERVER_DURATION, 10);
+    if (!isNaN(parsed) && parsed > 0) {
+        serverDuration = parsed;
+    } else if (parsed === 0) {
+        serverDuration = 0; // Disable auto-shutdown
+    } else {
+        console.warn(`Invalid SERVER_DURATION value: ${process.env.SERVER_DURATION}. Using default: ${DEFAULT_SERVER_DURATION_MS}ms`);
+    }
+}
 
 server.listen(PORT, () => {
     const startTime = new Date();
-    const endTime = new Date(startTime.getTime() + parseInt(SERVER_DURATION));
     
     console.log(`
 ╔════════════════════════════════════════════════════════════════╗
@@ -171,36 +185,45 @@ server.listen(PORT, () => {
    - Network:  http://${HOST}:${PORT}
 
 📡 Socket.IO: Ready for connections
-⏱️  Server Start Time: ${startTime.toISOString()}
-⏰  Auto-Shutdown:     ${endTime.toISOString()}
-⏳  Duration:          ${parseInt(SERVER_DURATION) / 1000 / 60 / 60} hours
-
+⏱️  Server Start Time: ${startTime.toISOString()}`);
+    
+    if (serverDuration > 0) {
+        const endTime = new Date(startTime.getTime() + serverDuration);
+        console.log(`⏰  Auto-Shutdown:     ${endTime.toISOString()}
+⏳  Duration:          ${serverDuration / 1000 / 60 / 60} hours`);
+    } else {
+        console.log(`⏰  Auto-Shutdown:     Disabled`);
+    }
+    
+    console.log(`
 Waiting for players to connect...
 `);
 
-    // Auto-shutdown after specified duration
-    setTimeout(() => {
-        console.log(`
+    // Auto-shutdown after specified duration (if enabled)
+    if (serverDuration > 0) {
+        setTimeout(() => {
+            console.log(`
 ╔════════════════════════════════════════════════════════════════╗
 ║              SERVER AUTO-SHUTDOWN                              ║
 ╚════════════════════════════════════════════════════════════════╝
 
 ⏰  Shutdown Time: ${new Date().toISOString()}
-📊  Session Duration: ${parseInt(SERVER_DURATION) / 1000 / 60 / 60} hours completed
+📊  Session Duration: ${serverDuration / 1000 / 60 / 60} hours completed
 
 Closing all connections...
 `);
-        
-        // Notify all connected clients
-        io.emit('server-shutdown', { 
-            message: 'Server is shutting down after scheduled duration',
-            duration: parseInt(SERVER_DURATION)
-        });
-        
-        // Close server gracefully
-        server.close(() => {
-            console.log('Server closed successfully');
-            process.exit(0);
-        });
-    }, parseInt(SERVER_DURATION));
+            
+            // Notify all connected clients
+            io.emit('server-shutdown', { 
+                message: 'Server is shutting down after scheduled duration',
+                duration: serverDuration
+            });
+            
+            // Close server gracefully
+            server.close(() => {
+                console.log('Server closed successfully');
+                process.exit(0);
+            });
+        }, serverDuration);
+    }
 });

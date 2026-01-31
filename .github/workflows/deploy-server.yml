@@ -59,7 +59,7 @@ jobs:
           cat server.log
         env:
           PORT: 3000
-          HOST: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          HOST: localhost
           SERVER_DURATION: 10800000
           DEMO_DURATION: 10800
 
