@@ -159,6 +159,41 @@ npm run dev
 
 ---
 
+## 🚀 Deployment
+
+### GitHub Actions
+
+The server can be automatically deployed using GitHub Actions. The workflow is configured to:
+
+1. **Trigger on**:
+   - Push to `main` or `master` branch
+   - Manual workflow dispatch
+
+2. **Deployment Steps**:
+   - Checkout code
+   - Set up Node.js 18
+   - Install server dependencies
+   - Start the server on port 3000
+   - Run for 5 minutes (for testing/demonstration)
+
+To manually trigger the deployment:
+1. Go to the **Actions** tab in your GitHub repository
+2. Select **Deploy Server** workflow
+3. Click **Run workflow**
+
+The workflow file is located at `.github/workflows/deploy-server.yml`.
+
+**Note**: For production deployments, consider using a cloud platform like:
+- Heroku
+- Railway
+- Render
+- DigitalOcean
+- AWS/GCP/Azure
+
+These platforms provide persistent hosting with proper SSL certificates and domain management.
+
+---
+
 ## 📡 Network Events
 
 ### Client → Server
