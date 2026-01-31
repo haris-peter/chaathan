@@ -123,6 +123,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     addRoomLabels() {
+        if (this.myRole !== 'chaathan') return;
+
         const rooms = [
             { x: 400, y: 300, name: 'ENTRANCE HALL' },
             { x: 1200, y: 300, name: 'MAIN HALL' },
@@ -396,9 +398,11 @@ export class GameScene extends Phaser.Scene {
             fill: '#ffcc00'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
 
-        this.minimapGraphics = this.add.graphics();
-        this.minimapGraphics.setScrollFactor(0).setDepth(100);
-        this.createMinimap();
+        if (this.myRole === 'chaathan') {
+            this.minimapGraphics = this.add.graphics();
+            this.minimapGraphics.setScrollFactor(0).setDepth(100);
+            this.createMinimap();
+        }
 
         if (this.myRole === 'chaathan') {
             this.createChaathanUI();
