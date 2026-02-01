@@ -61,6 +61,7 @@ export class BootScene extends Phaser.Scene {
 
         this.load.video('start-cinematic', 'assets/start_cinematic.mp4', true);
         this.load.video('end-cinematic', 'assets/end_cinematic.mp4', true);
+        this.load.audio('footstep', 'assets/audio/footstep.mp3');
 
         this.createPlaceholderAssets();
     }

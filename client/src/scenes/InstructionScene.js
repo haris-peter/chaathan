@@ -81,8 +81,7 @@ export class InstructionScene extends Phaser.Scene {
                 items: [
                     'WASD or Arrow Keys to move',
                     'E = interact with lamps',
-                    'Q = use Holy Salt (stuns nearby)',
-                    'Check minimap for navigation'
+                    'Q = use Holy Salt (stuns nearby)'
                 ]
             }
         ];

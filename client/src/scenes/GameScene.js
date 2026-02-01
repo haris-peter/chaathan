@@ -476,6 +476,9 @@ export class GameScene extends Phaser.Scene {
         // Initialize target position for interpolation
         sprite.targetX = sprite.x;
         sprite.targetY = sprite.y;
+
+        // Add footstep sound
+        sprite.walkSound = this.sound.add('footstep', { loop: true, volume: 0.5 });
     }
 
     createAIChaathans() {
@@ -1107,9 +1110,19 @@ export class GameScene extends Phaser.Scene {
                         if (dx > 0.5) entity.setFlipX(true);
                         else if (dx < -0.5) entity.setFlipX(false);
                     }
+
+                    // Play walk sound for players
+                    if (entity.walkSound && !entity.walkSound.isPlaying) {
+                        entity.walkSound.play();
+                    }
                 } else {
                     entity.x = entity.targetX;
                     entity.y = entity.targetY;
+
+                    // Stop walk sound
+                    if (entity.walkSound && entity.walkSound.isPlaying) {
+                        entity.walkSound.stop();
+                    }
                 }
 
                 // Name Tag Sync
@@ -1193,6 +1206,14 @@ export class GameScene extends Phaser.Scene {
             }
 
             SocketManager.sendMove(mySprite.x, mySprite.y);
+
+            if (mySprite.walkSound && !mySprite.walkSound.isPlaying) {
+                mySprite.walkSound.play();
+            }
+        } else {
+            if (mySprite.walkSound && mySprite.walkSound.isPlaying) {
+                mySprite.walkSound.stop();
+            }
         }
     }
 

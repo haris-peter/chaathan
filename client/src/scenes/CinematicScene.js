@@ -43,6 +43,8 @@ export class CinematicScene extends Phaser.Scene {
                 this.transitionToNextScene();
             });
 
+            this.video.setMute(false);
+            this.video.setVolume(1);
             this.video.play(false);
 
             this.time.delayedCall(10000, () => {

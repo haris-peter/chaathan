@@ -1,11 +1,11 @@
 # Chaathan: Kerala Horror Multiplayer Game 🎭
 
-A co-op survival horror game inspired by Kerala folklore. Four Poojaris must work together to banish the Twin Chaathans before the darkness consumes them.
+A co-op survival horror game inspired by Kerala folklore. Four Poojaris must work together to banish the Chaathans before the darkness consumes them.
 
 ## 🎮 Game Overview (V3 - Holy Salt Update)
 
 ### Premise
-Four Poojaris have entered a haunted tharavad to perform a ritual that will banish the Twin Chaathans forever. They must light the sacred lamps, manage their Light Aura, and complete the ritual in the Pooja Room while avoiding the AI-controlled Chaathans that hunt them relentlessly. Use **Holy Salt** to momentarily stun the spirits and survive!
+Four Poojaris have entered a haunted tharavad to perform a ritual that will banish the Chaathans forever. They must light the sacred lamps, manage their Light Aura, and complete the ritual in the Pooja Room while avoiding the AI-controlled Chaathans that hunt them relentlessly. Use **Holy Salt** to momentarily stun the spirits and survive!
 
 ### Win Conditions
 - **Poojaris Win**: Light all 4 mini lamps (spawned in random rooms), activate the Grand Lamp, then all surviving players gather in the ritual circle for 10 seconds.
@@ -78,7 +78,7 @@ Host can toggle difficulty on the Main Menu:
 - **Medium (Yellow)**: 4 Chaathans.
 - **Hard (Red)**: 6 Chaathans (Distinct spawn locations).
 
-### AI Chaathan Behavior (Twin Terrors)
+### AI Chaathan Behavior
 
 | Type | Color | Behavior |
 |------|-------|----------|
@@ -149,7 +149,7 @@ npm run dev
 1. Open http://localhost:5173 in 4 browser tabs
 2. Create/Join a room
 3. All players click "I AM READY"
-4. Survive the Twin Chaathans!
+4. Survive the Chaathans!
 
 ---
 
@@ -192,7 +192,7 @@ npm run dev
 
 ### ✅ Completed
 - [x] Co-op 4-player gameplay
-- [x] **Twin Chaathan AI** (Stalker & Specter types)
+- [x] **Chaathan AI** (Stalker & Specter types)
 - [x] **Holy Salt Stun Mechanic**
 - [x] **Fear Vignette System**
 - [x] Light Aura system with decay
@@ -206,7 +206,7 @@ npm run dev
 - [x] **Network Smoothing** (Interpolation)
 
 ### 🔲 Planned
-- [ ] Sound effects and music
+- [x] Sound effects (Footsteps)
 - [ ] Mobile controls
 
 ---
