@@ -569,7 +569,9 @@ export class GameRoom {
             talismans: TALISMAN_COUNT,
             aura: AURA_MAX,
             isAlive: true,
-            saltCount: 0
+            saltCount: 0,
+            invulnerableUntil: 0,
+            lastHitTime: 0
         };
 
         this.players.set(socketId, player);
@@ -674,6 +676,14 @@ export class GameRoom {
     playerLoseTalisman(playerId, io, reason) {
         const player = this.players.get(playerId);
         if (!player || !player.isAlive) return;
+
+        // Immunity check for collisions
+        if (reason === 'caught') {
+            const now = Date.now();
+            if (now < player.invulnerableUntil) return;
+            // Set immunity for 3 seconds
+            player.invulnerableUntil = now + 3000;
+        }
 
         player.talismans -= 1;
 

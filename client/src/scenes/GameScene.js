@@ -472,6 +472,10 @@ export class GameScene extends Phaser.Scene {
         }
 
         this.players.set(playerData.id, sprite);
+
+        // Initialize target position for interpolation
+        sprite.targetX = sprite.x;
+        sprite.targetY = sprite.y;
     }
 
     createAIChaathans() {
@@ -511,6 +515,10 @@ export class GameScene extends Phaser.Scene {
         if (chaathanData.alpha !== undefined) {
             sprite.setAlpha(chaathanData.alpha);
         }
+
+        // Initialize target position for interpolation
+        sprite.targetX = sprite.x;
+        sprite.targetY = sprite.y;
 
         return sprite;
     }
@@ -761,12 +769,9 @@ export class GameScene extends Phaser.Scene {
         SocketManager.on('player-moved', (data) => {
             const sprite = this.players.get(data.playerId);
             if (sprite) {
-                sprite.x = data.x;
-                sprite.y = data.y;
-                if (sprite.nameTag) {
-                    sprite.nameTag.x = data.x;
-                    sprite.nameTag.y = data.y - 30;
-                }
+                // Update target position instead of jumping directly
+                sprite.targetX = data.x;
+                sprite.targetY = data.y;
             }
         });
 
@@ -948,19 +953,11 @@ export class GameScene extends Phaser.Scene {
         chaathansData.forEach((cData, index) => {
             if (this.aiChaathans[index]) {
                 const sprite = this.aiChaathans[index];
-                const prevX = sprite.lastX || sprite.x;
 
-                if (sprite.setFlipX) {
-                    if (cData.x > prevX + 0.5) {
-                        sprite.setFlipX(true);
-                    } else if (cData.x < prevX - 0.5) {
-                        sprite.setFlipX(false);
-                    }
-                }
+                // Set target position for interpolation
+                sprite.targetX = cData.x;
+                sprite.targetY = cData.y;
 
-                sprite.lastX = cData.x;
-                sprite.x = cData.x;
-                sprite.y = cData.y;
                 sprite.state = cData.state;
 
                 if (cData.color && sprite.setTint) {
@@ -1083,6 +1080,57 @@ export class GameScene extends Phaser.Scene {
         // this.updateMinimap();
         this.updateFearEffect();
         this.checkSaltPickup();
+
+        // Add interpolation update
+        const deltaTime = this.game.loop.delta;
+        this.updateInterpolatedEntities(deltaTime);
+    }
+
+    updateInterpolatedEntities(deltaTime) {
+        const lerpFactor = 0.1; // Smoothing factor
+
+        // Helper to update entity
+        const updateEntity = (entity) => {
+            if (entity.targetX !== undefined && entity.targetY !== undefined) {
+                // Movement Logic
+                const dx = entity.targetX - entity.x;
+                const dy = entity.targetY - entity.y;
+
+                if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) {
+                    entity.x += dx * lerpFactor;
+                    entity.y += dy * lerpFactor;
+
+                    // Sprite Flip Logic: "Default Left"
+                    // If moving Right (dx > 0), flipX(true).
+                    // If moving Left (dx < 0), flipX(false).
+                    if (entity.setFlipX) {
+                        if (dx > 0.5) entity.setFlipX(true);
+                        else if (dx < -0.5) entity.setFlipX(false);
+                    }
+                } else {
+                    entity.x = entity.targetX;
+                    entity.y = entity.targetY;
+                }
+
+                // Name Tag Sync
+                if (entity.nameTag) {
+                    entity.nameTag.x = entity.x;
+                    entity.nameTag.y = entity.y - 30;
+                }
+            }
+        };
+
+        // Update Remote Players
+        this.players.forEach((sprite) => {
+            if (sprite.playerId !== this.myId) {
+                updateEntity(sprite);
+            }
+        });
+
+        // Update AI Chaathans
+        this.aiChaathans.forEach((sprite) => {
+            updateEntity(sprite);
+        });
     }
 
     checkSaltPickup() {
@@ -1232,10 +1280,13 @@ export class GameScene extends Phaser.Scene {
 
                 this.tweens.add({
                     targets: newLamp,
-                    scaleX: miniLampScale * 1.2,
-                    scaleY: miniLampScale * 1.2,
+                    scaleX: miniLampScale * 1.5, // Increased size for lit lamp sprite
+                    scaleY: miniLampScale * 1.5,
                     duration: 200,
-                    yoyo: true
+                    yoyo: true,
+                    onComplete: () => {
+                        newLamp.setScale(miniLampScale * 1.3); // Keep it slightly larger permanently
+                    }
                 });
             } else {
                 lamp.state = lampData.state;
@@ -1244,8 +1295,8 @@ export class GameScene extends Phaser.Scene {
                 }
                 this.tweens.add({
                     targets: lamp,
-                    scaleX: 1.2,
-                    scaleY: 1.2,
+                    scaleX: 1.5, // Increased size for lit lamp
+                    scaleY: 1.5,
                     duration: 200,
                     yoyo: true
                 });
@@ -1254,6 +1305,10 @@ export class GameScene extends Phaser.Scene {
             lamp.state = lampData.state;
             if (!lamp.isSprite && lamp.setFillStyle) {
                 lamp.setFillStyle(0x444444);
+            }
+            // Reset scale if unlit
+            if (!isGrand) {
+                lamp.setScale(lamp.isSprite ? 0.25 : 1);
             }
         }
     }
