@@ -18,10 +18,10 @@ Four Poojaris have entered a haunted tharavad to perform a ritual that will bani
 | Feature | V1 | V2 | V3 (Current) |
 |---------|----|----|--------------|
 | **Game Mode** | Asymmetric PvP (1v3) | Co-op Survival (4 vs AI) | Co-op Survival with Items |
-| **Chaathan** | Human player | 2 Generic AI | **Stalker (Red)** & **Specter (Blue)** |
-| **Mechanics** | Hide & Seek | Aura Management | **Holy Salt (Stun Item)** + **Fear System** |
-| **Lamps** | 3 lamps | 4 corners + 1 grand | **Randomized locations** + 1 grand |
-| **Spawning** | Random | Corners | **Ritual Circle (Central Hub)** |
+| **Chaathan** | Human player | 2 Generic AI | **Stalker (Red)** & **Specter (Blue)** (Variable Count) |
+| **Mechanics** | Hide & Seek | Aura Management | **Holy Salt**, **Difficulty**, **Immunity** |
+| **Lamps** | 3 lamps | 4 corners + 1 grand | **Randomized locations** + 1 grand (Larger Visuals) |
+| **Spawning** | Random | Corners | **Ritual Circle**, **Smart Respawn System** |
 
 ---
 
@@ -65,12 +65,18 @@ chaathan/
 
 | Mechanic | Description |
 |----------|-------------|
-| **Movement** | WASD/Arrow keys (Sprites flip direction) |
+| **Movement** | WASD/Arrow keys (**Interpolated smoothing** + Sprite flipping) |
 | **Interact** | **E key** (light lamps, refuel aura, pickup salt) |
 | **Holy Salt** | **Q key** to use. Stuns nearby Chaathans for 3s. |
 | **Light Aura** | Decays at 2%/sec. Refuel at lit lamps. 0% = lose 1 talisman |
-| **Talismans** | 3 lives. Caught by Chaathan = lose 1. 0 talismans = permadeath |
-| **Respawn** | After losing a talisman, respawn with full aura |
+| **Talismans** | 3 lives. Caught by Chaathan = lose 1 + **3s Immunity**. 0 = permadeath |
+| **Respawn** | Teleports to specific safe point + Aura restores to 50% + "You Respawned!" msg |
+
+### Selectable Difficulty
+Host can toggle difficulty on the Main Menu:
+- **Easy (Green)**: 2 Chaathans.
+- **Medium (Yellow)**: 4 Chaathans.
+- **Hard (Red)**: 6 Chaathans (Distinct spawn locations).
 
 ### AI Chaathan Behavior (Twin Terrors)
 
@@ -195,11 +201,13 @@ npm run dev
 - [x] **Central Ritual Spawn**
 - [x] Spectator mode
 - [x] Room-based camera transitions
+- [x] **Difficulty Selection (UI + Logic)**
+- [x] **Smart Respawn System** (Teleport + Immunity)
+- [x] **Network Smoothing** (Interpolation)
 
 ### 🔲 Planned
 - [ ] Sound effects and music
 - [ ] Mobile controls
-- [ ] Difficulty levels
 
 ---
 

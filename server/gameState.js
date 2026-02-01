@@ -540,12 +540,7 @@ export class GameRoom {
         ];
     }
 
-    initAIChaathans() {
-        this.aiChaathans = [
-            new AIChaathan(0, 3600, 300, this.roomBounds, CHAATHAN_TYPES.STALKER),
-            new AIChaathan(1, 400, 2700, this.roomBounds, CHAATHAN_TYPES.SPECTER)
-        ];
-    }
+
 
     initSaltItems() {
         this.saltItems = SALT_POSITIONS.map((pos, idx) => ({
