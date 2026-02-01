@@ -11,6 +11,8 @@ import {
     DOOR_STATES,
     GAME_STATES,
     CHAATHAN_STATES,
+    CHAATHAN_TYPES,
+    CHAATHAN_CONFIG,
     TALISMAN_COUNT,
     AURA_MAX,
     AURA_DECAY_RATE,
@@ -21,7 +23,10 @@ import {
     AI_CHASE_SPEED,
     AI_DETECTION_RANGE,
     AI_CATCH_DISTANCE,
-    AI_LOSE_SIGHT_DISTANCE
+    AI_LOSE_SIGHT_DISTANCE,
+    STUN_DURATION,
+    SALT_COUNT,
+    SALT_POSITIONS
 } from './constants.js';
 
 const MAP_WIDTH = 4000;
@@ -33,10 +38,12 @@ const ROOM_ROWS = 5;
 const TILE_SIZE = 32;
 
 class AIChaathan {
-    constructor(id, startX, startY, roomBounds) {
+    constructor(id, startX, startY, roomBounds, type = CHAATHAN_TYPES.STALKER) {
         this.id = id;
         this.x = startX;
         this.y = startY;
+        this.type = type;
+        this.config = CHAATHAN_CONFIG[type];
         this.state = CHAATHAN_STATES.PATROL;
         this.targetPlayerId = null;
         this.patrolTarget = { x: startX, y: startY };
@@ -44,6 +51,7 @@ class AIChaathan {
         this.lastDirectionChange = 0;
         this.direction = { x: 0, y: 0 };
         this.doorOpenings = this.buildDoorOpeningsMap();
+        this.stunUntil = 0;
         this.pickNewPatrolTarget();
     }
 
@@ -137,11 +145,12 @@ class AIChaathan {
     findNearestVisiblePlayer(players) {
         let nearest = null;
         let nearestDist = Infinity;
+        const detectionRange = this.config.detectionRange;
 
         players.forEach((player) => {
             if (!player.isAlive) return;
             const dist = this.getDistanceToPlayer(player);
-            if (dist < AI_DETECTION_RANGE && dist < nearestDist) {
+            if (dist < detectionRange && dist < nearestDist) {
                 nearest = player;
                 nearestDist = dist;
             }
@@ -150,7 +159,27 @@ class AIChaathan {
         return nearest;
     }
 
+    stun() {
+        this.stunUntil = Date.now() + STUN_DURATION;
+        this.state = CHAATHAN_STATES.STUNNED;
+        this.targetPlayerId = null;
+    }
+
+    isStunned() {
+        return Date.now() < this.stunUntil;
+    }
+
     update(players, deltaTime) {
+        if (this.isStunned()) {
+            this.state = CHAATHAN_STATES.STUNNED;
+            return;
+        }
+
+        if (this.state === CHAATHAN_STATES.STUNNED) {
+            this.state = CHAATHAN_STATES.PATROL;
+            this.pickNewPatrolTarget();
+        }
+
         const alivePlayers = Array.from(players.values()).filter(p => p.isAlive);
 
         if (this.state === CHAATHAN_STATES.PATROL) {
@@ -166,7 +195,7 @@ class AIChaathan {
                 this.pickNewPatrolTarget();
             }
 
-            const speed = AI_PATROL_SPEED * (deltaTime / 1000);
+            const speed = this.config.patrolSpeed * (deltaTime / 1000);
             const angle = Math.atan2(this.patrolTarget.y - this.y, this.patrolTarget.x - this.x);
             const newX = this.x + Math.cos(angle) * speed;
             const newY = this.y + Math.sin(angle) * speed;
@@ -201,7 +230,7 @@ class AIChaathan {
                 return;
             }
 
-            const speed = AI_CHASE_SPEED * (deltaTime / 1000);
+            const speed = this.config.chaseSpeed * (deltaTime / 1000);
             const angle = Math.atan2(target.y - this.y, target.x - this.x);
             const newX = this.x + Math.cos(angle) * speed;
             const newY = this.y + Math.sin(angle) * speed;
@@ -221,6 +250,7 @@ class AIChaathan {
     }
 
     checkCollision(players) {
+        if (this.isStunned()) return [];
         const caughtPlayers = [];
         players.forEach((player) => {
             if (!player.isAlive) return;
@@ -237,7 +267,11 @@ class AIChaathan {
             id: this.id,
             x: this.x,
             y: this.y,
-            state: this.state
+            state: this.state,
+            type: this.type,
+            stunned: this.isStunned(),
+            alpha: this.config.alpha,
+            color: this.config.color
         };
     }
 }
@@ -330,9 +364,54 @@ export class GameRoom {
 
     initAIChaathans() {
         this.aiChaathans = [
-            new AIChaathan(0, 3600, 300, this.roomBounds),
-            new AIChaathan(1, 3600, 2700, this.roomBounds)
+            new AIChaathan(0, 3600, 300, this.roomBounds, CHAATHAN_TYPES.STALKER),
+            new AIChaathan(1, 400, 2700, this.roomBounds, CHAATHAN_TYPES.SPECTER)
         ];
+    }
+
+    initSaltItems() {
+        this.saltItems = SALT_POSITIONS.map((pos, idx) => ({
+            id: idx,
+            x: pos.x,
+            y: pos.y,
+            pickedUp: false
+        }));
+    }
+
+    pickupSalt(socketId, saltId) {
+        const player = this.players.get(socketId);
+        if (!player || !player.isAlive) return null;
+
+        const salt = this.saltItems.find(s => s.id === saltId && !s.pickedUp);
+        if (!salt) return null;
+
+        const dist = Math.hypot(player.x - salt.x, player.y - salt.y);
+        if (dist <= 60) {
+            salt.pickedUp = true;
+            player.saltCount = (player.saltCount || 0) + 1;
+            return { saltId: salt.id, playerId: player.id, saltCount: player.saltCount };
+        }
+        return null;
+    }
+
+    useSalt(socketId) {
+        const player = this.players.get(socketId);
+        if (!player || !player.isAlive || !player.saltCount || player.saltCount <= 0) return null;
+
+        let stunnedChaathan = null;
+        const SALT_RANGE = 100;
+
+        for (const chaathan of this.aiChaathans) {
+            const dist = Math.hypot(player.x - chaathan.x, player.y - chaathan.y);
+            if (dist <= SALT_RANGE && !chaathan.isStunned()) {
+                chaathan.stun();
+                stunnedChaathan = chaathan.id;
+                break;
+            }
+        }
+
+        player.saltCount -= 1;
+        return { playerId: player.id, saltCount: player.saltCount, stunnedChaathanId: stunnedChaathan };
     }
 
     addPlayer(socketId, playerName) {
@@ -350,7 +429,8 @@ export class GameRoom {
             y: spawn.y,
             talismans: TALISMAN_COUNT,
             aura: AURA_MAX,
-            isAlive: true
+            isAlive: true,
+            saltCount: 0
         };
 
         this.players.set(socketId, player);
@@ -394,6 +474,7 @@ export class GameRoom {
         this.lastUpdateTime = Date.now();
 
         this.initAIChaathans();
+        this.initSaltItems();
 
         this.timerInterval = setInterval(() => {
             this.timeRemaining -= 1000;
@@ -631,6 +712,7 @@ export class GameRoom {
             lamps: this.lamps,
             doors: this.doors,
             aiChaathans: this.aiChaathans.map(c => c.getState()),
+            saltItems: this.saltItems || [],
             ritualCircle: {
                 x: this.ritualCircle.x,
                 y: this.ritualCircle.y,

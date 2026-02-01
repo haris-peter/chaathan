@@ -140,5 +140,16 @@ export const GAME_CONSTANTS = {
         '2,4': { name: 'Secret Room', bg: 'dark' },
         '3,4': { name: 'Treasury', bg: 'chamber' },
         '4,4': { name: 'Tower West', bg: 'tower' }
-    }
+    },
+
+    SALT_POSITIONS: [
+        { x: 1200, y: 900 },
+        { x: 2800, y: 900 },
+        { x: 1200, y: 2100 },
+        { x: 2800, y: 2100 }
+    ],
+
+    SALT_USE_RANGE: 100,
+    FEAR_RANGE: 300,
+    FEAR_VIGNETTE_INTENSITY: 0.5
 };

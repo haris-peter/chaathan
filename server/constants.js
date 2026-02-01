@@ -46,5 +46,38 @@ export const GAME_STATES = {
 
 export const CHAATHAN_STATES = {
   PATROL: 'patrol',
-  HUNT: 'hunt'
+  HUNT: 'hunt',
+  STUNNED: 'stunned'
 };
+
+export const CHAATHAN_TYPES = {
+  STALKER: 'stalker',
+  SPECTER: 'specter'
+};
+
+export const CHAATHAN_CONFIG = {
+  stalker: {
+    patrolSpeed: 60,
+    chaseSpeed: 170,
+    detectionRange: 250,
+    color: 0xff4444,
+    alpha: 1.0
+  },
+  specter: {
+    patrolSpeed: 100,
+    chaseSpeed: 130,
+    detectionRange: 180,
+    color: 0x4488ff,
+    alpha: 0.6
+  }
+};
+
+export const STUN_DURATION = 3000;
+export const SALT_COUNT = 4;
+
+export const SALT_POSITIONS = [
+  { x: 1200, y: 900 },
+  { x: 2800, y: 900 },
+  { x: 1200, y: 2100 },
+  { x: 2800, y: 2100 }
+];

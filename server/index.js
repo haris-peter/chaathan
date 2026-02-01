@@ -141,6 +141,32 @@ io.on('connection', (socket) => {
         }
     });
 
+    socket.on('pickup-salt', (saltId) => {
+        const room = gameManager.getPlayerRoom(socket.id);
+        if (!room || room.gameState !== GAME_STATES.PLAYING) return;
+
+        const result = room.pickupSalt(socket.id, saltId);
+        if (result) {
+            io.to(room.roomId).emit('salt-picked-up', result);
+        }
+    });
+
+    socket.on('use-salt', () => {
+        const room = gameManager.getPlayerRoom(socket.id);
+        if (!room || room.gameState !== GAME_STATES.PLAYING) return;
+
+        const result = room.useSalt(socket.id);
+        if (result) {
+            io.to(socket.id).emit('salt-used', result);
+            if (result.stunnedChaathanId !== null) {
+                io.to(room.roomId).emit('chaathan-stunned', {
+                    chaathanId: result.stunnedChaathanId,
+                    byPlayerId: socket.id
+                });
+            }
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log(`Player disconnected: ${socket.id}`);
         const room = gameManager.getPlayerRoom(socket.id);

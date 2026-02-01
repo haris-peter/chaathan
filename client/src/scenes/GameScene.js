@@ -14,6 +14,8 @@ export class GameScene extends Phaser.Scene {
         this.lamps = [];
         this.doors = [];
         this.aiChaathans = [];
+        this.saltItems = [];
+        this.mySaltCount = 0;
         this.myAura = GAME_CONSTANTS.AURA_MAX;
         this.myTalismans = GAME_CONSTANTS.TALISMAN_COUNT;
         this.isAlive = true;
@@ -24,6 +26,7 @@ export class GameScene extends Phaser.Scene {
         this.ritualTotal = 10000;
         this.grandLampActive = false;
         this.doorOpenings = this.buildDoorOpeningsMap();
+        this.fearIntensity = 0;
     }
 
     buildDoorOpeningsMap() {
@@ -51,10 +54,12 @@ export class GameScene extends Phaser.Scene {
         this.addRoomLabels();
         this.createLamps();
         this.createDoors();
+        this.createSaltItems();
         this.createRitualCircle();
         this.createPlayers();
         this.createAIChaathans();
         this.createUI();
+        this.createFearVignette();
         this.setupCamera();
         this.setupControls();
         this.setupNetwork();
@@ -490,20 +495,117 @@ export class GameScene extends Phaser.Scene {
                 sprite.play('chaathan-walk');
             }
         } else {
-            sprite = this.add.circle(chaathanData.x, chaathanData.y, 20, 0xff0000);
+            const color = chaathanData.color || 0xff0000;
+            sprite = this.add.circle(chaathanData.x, chaathanData.y, 20, color);
         }
 
         sprite.chaathanId = chaathanData.id;
+        sprite.chaathanType = chaathanData.type;
         sprite.state = chaathanData.state;
         sprite.setDepth(10);
 
+        if (chaathanData.color && sprite.setTint) {
+            sprite.setTint(chaathanData.color);
+        }
+        if (chaathanData.alpha !== undefined) {
+            sprite.setAlpha(chaathanData.alpha);
+        }
+
         return sprite;
+    }
+
+    createSaltItems() {
+        this.saltItems = [];
+        const saltData = this.gameData.saltItems || GAME_CONSTANTS.SALT_POSITIONS.map((pos, idx) => ({
+            id: idx,
+            x: pos.x,
+            y: pos.y,
+            pickedUp: false
+        }));
+
+        saltData.forEach((salt) => {
+            if (salt.pickedUp) return;
+
+            let saltSprite;
+            if (this.textures.exists('salt-pile')) {
+                saltSprite = this.add.image(salt.x, salt.y, 'salt-pile');
+            } else {
+                saltSprite = this.add.circle(salt.x, salt.y, 12, 0xffffff);
+            }
+
+            saltSprite.setDepth(5);
+            saltSprite.saltId = salt.id;
+            saltSprite.setInteractive();
+            saltSprite.on('pointerdown', () => this.tryPickupSalt(saltSprite));
+
+            this.saltItems.push(saltSprite);
+        });
+    }
+
+    createFearVignette() {
+        this.fearVignette = this.add.graphics();
+        this.fearVignette.setScrollFactor(0);
+        this.fearVignette.setDepth(99);
+    }
+
+    updateFearEffect() {
+        const mySprite = this.players.get(this.myId);
+        if (!mySprite) return;
+
+        let minDist = Infinity;
+        this.aiChaathans.forEach(chaathan => {
+            const dist = Phaser.Math.Distance.Between(mySprite.x, mySprite.y, chaathan.x, chaathan.y);
+            if (dist < minDist) minDist = dist;
+        });
+
+        const fearRange = GAME_CONSTANTS.FEAR_RANGE;
+        if (minDist < fearRange) {
+            this.fearIntensity = Math.min(1, (fearRange - minDist) / fearRange) * GAME_CONSTANTS.FEAR_VIGNETTE_INTENSITY;
+        } else {
+            this.fearIntensity = 0;
+        }
+
+        this.fearVignette.clear();
+        if (this.fearIntensity > 0) {
+            const width = this.cameras.main.width;
+            const height = this.cameras.main.height;
+
+            this.fearVignette.fillStyle(0x000000, this.fearIntensity);
+            this.fearVignette.fillRect(0, 0, width, 60);
+            this.fearVignette.fillRect(0, height - 60, width, 60);
+            this.fearVignette.fillRect(0, 0, 60, height);
+            this.fearVignette.fillRect(width - 60, 0, 60, height);
+
+            this.fearVignette.fillStyle(0x880000, this.fearIntensity * 0.3);
+            this.fearVignette.fillRect(0, 0, width, 30);
+            this.fearVignette.fillRect(0, height - 30, width, 30);
+            this.fearVignette.fillRect(0, 0, 30, height);
+            this.fearVignette.fillRect(width - 30, 0, 30, height);
+        }
+    }
+
+    tryPickupSalt(saltSprite) {
+        if (!this.isAlive) return;
+
+        const mySprite = this.players.get(this.myId);
+        if (!mySprite) return;
+
+        const dist = Phaser.Math.Distance.Between(mySprite.x, mySprite.y, saltSprite.x, saltSprite.y);
+        if (dist < GAME_CONSTANTS.INTERACTION_DISTANCE) {
+            SocketManager.emit('pickup-salt', saltSprite.saltId);
+        }
+    }
+
+    useSalt() {
+        if (!this.isAlive || this.mySaltCount <= 0) return;
+        SocketManager.emit('use-salt');
     }
 
     createUI() {
         this.createTimerUI();
         this.createAuraUI();
         this.createTalismanUI();
+        this.createSaltUI();
         this.createRitualUI();
         this.createMinimap();
     }
@@ -562,6 +664,27 @@ export class GameScene extends Phaser.Scene {
             font: '16px Courier New',
             fill: '#00ff00'
         }).setOrigin(0.5).setScrollFactor(0).setDepth(100);
+    }
+
+    createSaltUI() {
+        const startX = 350;
+        const startY = 80;
+
+        this.add.text(startX, startY - 20, 'Holy Salt [Q]', {
+            font: '14px Courier New',
+            fill: '#ffffff'
+        }).setScrollFactor(0).setDepth(100);
+
+        this.saltCountText = this.add.text(startX, startY, 'x0', {
+            font: '18px Courier New',
+            fill: '#ffffff'
+        }).setScrollFactor(0).setDepth(100);
+    }
+
+    updateSaltUI() {
+        if (this.saltCountText) {
+            this.saltCountText.setText(`x${this.mySaltCount}`);
+        }
     }
 
     createMinimap() {
@@ -628,6 +751,9 @@ export class GameScene extends Phaser.Scene {
 
         this.interactKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.E);
         this.interactKey.on('down', () => this.tryInteract());
+
+        this.saltKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q);
+        this.saltKey.on('down', () => this.useSalt());
     }
 
     setupNetwork() {
@@ -776,6 +902,44 @@ export class GameScene extends Phaser.Scene {
                 this.scene.start('EndScene', { winner: data.winner });
             }
         });
+
+        SocketManager.on('salt-picked-up', (data) => {
+            const saltSprite = this.saltItems.find(s => s.saltId === data.saltId);
+            if (saltSprite) {
+                saltSprite.destroy();
+                this.saltItems = this.saltItems.filter(s => s.saltId !== data.saltId);
+            }
+            if (data.playerId === this.myId) {
+                this.mySaltCount = data.saltCount;
+                this.updateSaltUI();
+                this.showMessage('Picked up Holy Salt!', 0xffffff);
+            }
+        });
+
+        SocketManager.on('salt-used', (data) => {
+            if (data.playerId === this.myId) {
+                this.mySaltCount = data.saltCount;
+                this.updateSaltUI();
+                if (data.stunnedChaathanId !== null) {
+                    this.showMessage('Chaathan stunned!', 0x00ff00);
+                } else {
+                    this.showMessage('No Chaathan in range!', 0xff6666);
+                }
+            }
+        });
+
+        SocketManager.on('chaathan-stunned', (data) => {
+            const chaathan = this.aiChaathans.find(c => c.chaathanId === data.chaathanId);
+            if (chaathan) {
+                this.tweens.add({
+                    targets: chaathan,
+                    alpha: 0.3,
+                    yoyo: true,
+                    repeat: 5,
+                    duration: 250
+                });
+            }
+        });
     }
 
     updateAIChaathans(chaathansData) {
@@ -784,6 +948,16 @@ export class GameScene extends Phaser.Scene {
                 this.aiChaathans[index].x = cData.x;
                 this.aiChaathans[index].y = cData.y;
                 this.aiChaathans[index].state = cData.state;
+
+                if (cData.color && this.aiChaathans[index].setTint) {
+                    this.aiChaathans[index].setTint(cData.color);
+                }
+
+                if (cData.stunned) {
+                    this.aiChaathans[index].setAlpha(0.3);
+                } else if (cData.alpha !== undefined) {
+                    this.aiChaathans[index].setAlpha(cData.alpha);
+                }
             }
         });
     }
@@ -854,6 +1028,21 @@ export class GameScene extends Phaser.Scene {
         this.handleMovement();
         this.checkRoomTransition();
         this.updateMinimap();
+        this.updateFearEffect();
+        this.checkSaltPickup();
+    }
+
+    checkSaltPickup() {
+        const mySprite = this.players.get(this.myId);
+        if (!mySprite) return;
+
+        for (const salt of this.saltItems) {
+            const dist = Phaser.Math.Distance.Between(mySprite.x, mySprite.y, salt.x, salt.y);
+            if (dist < 40) {
+                SocketManager.emit('pickup-salt', salt.saltId);
+                break;
+            }
+        }
     }
 
     handleMovement() {

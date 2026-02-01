@@ -71,6 +71,7 @@ export class BootScene extends Phaser.Scene {
         this.createDoorSprite();
         this.createRitualItemSprite();
         this.createChaathanMask();
+        this.createSaltSprite();
         this.createMapTiles();
     }
 
@@ -237,6 +238,20 @@ export class BootScene extends Phaser.Scene {
         shadowGraphics.fillCircle(40, 20, 20);
         shadowGraphics.generateTexture('shadow-silhouette', 80, 160);
         shadowGraphics.destroy();
+    }
+
+    createSaltSprite() {
+        const saltGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+        saltGraphics.fillStyle(0xffffff, 0.9);
+        saltGraphics.fillEllipse(16, 20, 28, 12);
+        saltGraphics.fillStyle(0xeeeeee, 1);
+        saltGraphics.fillEllipse(16, 18, 24, 10);
+        saltGraphics.fillStyle(0xdddddd, 1);
+        saltGraphics.fillCircle(10, 16, 4);
+        saltGraphics.fillCircle(18, 14, 5);
+        saltGraphics.fillCircle(22, 17, 3);
+        saltGraphics.generateTexture('salt-pile', 32, 28);
+        saltGraphics.destroy();
     }
 
     create() {
