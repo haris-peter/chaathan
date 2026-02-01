@@ -60,22 +60,54 @@ export class LobbyScene extends Phaser.Scene {
             if (isNaN(duration) || duration < 1) duration = 5;
             if (duration > 60) duration = 60; // Max 60 mins
 
-            const difficultyInput = prompt('Enter Difficulty (easy/medium/hard):', 'medium');
-            let difficulty = 'medium';
-            if (difficultyInput) {
-                const cleanInput = difficultyInput.trim().toLowerCase();
-                if (['easy', 'medium', 'hard'].includes(cleanInput)) {
-                    difficulty = cleanInput;
-                }
-            }
-
-            this.statusText.setText(`Creating ${difficulty} room (${duration} min)...`);
-            SocketManager.createRoom(this.playerName, duration * 60 * 1000, difficulty);
+            this.statusText.setText(`Creating ${this.selectedDifficulty} room (${duration} min)...`);
+            SocketManager.createRoom(this.playerName, duration * 60 * 1000, this.selectedDifficulty);
         });
         this.mainMenuContainer.add(createBtn);
 
+        // Difficulty Toggle Button
+        this.selectedDifficulty = 'medium';
+        const difficultyBtn = this.createButton(width / 2, height / 2 + 80, 'Difficulty: Medium', () => {
+            if (this.selectedDifficulty === 'easy') {
+                this.selectedDifficulty = 'medium';
+            } else if (this.selectedDifficulty === 'medium') {
+                this.selectedDifficulty = 'hard';
+            } else {
+                this.selectedDifficulty = 'easy';
+            }
+            // Update button label manually since createButton doesn't expose it
+            // Ideally we'd reconstruct or access the text object
+            // For simplicity, we'll just clear and redraw the button label or use a variable
+            // But checking createButton, it creates a new container. We need to update the existing text.
+        });
+
+        // HACK: To update the button text, we'll store the text object
+        const diffText = difficultyBtn.list[1]; // label is index 1
+        // Override the callback to update text
+        const originalCallback = difficultyBtn.list[0].input.hitAreaCallback; // This is internal
+        // Re-bind click
+        difficultyBtn.list[0].off('pointerup');
+        difficultyBtn.list[0].on('pointerup', () => {
+            difficultyBtn.list[0].setFillStyle(0x555555);
+            if (this.selectedDifficulty === 'easy') {
+                this.selectedDifficulty = 'medium';
+                diffText.setText('Difficulty: Medium');
+                diffText.setFill('#ffff00'); // Yellow
+            } else if (this.selectedDifficulty === 'medium') {
+                this.selectedDifficulty = 'hard';
+                diffText.setText('Difficulty: Hard');
+                diffText.setFill('#ff0000'); // Red
+            } else {
+                this.selectedDifficulty = 'easy';
+                diffText.setText('Difficulty: Easy');
+                diffText.setFill('#00ff00'); // Green
+            }
+        });
+
+        this.mainMenuContainer.add(difficultyBtn);
+
         // Join Room Button
-        const joinBtn = this.createButton(width / 2, height / 2 + 80, 'Join Room', () => {
+        const joinBtn = this.createButton(width / 2, height / 2 + 140, 'Join Room', () => {
             const roomId = prompt('Enter Room ID:');
             if (roomId && roomId.trim().length > 0) {
                 const trimmedId = roomId.trim();
@@ -86,7 +118,7 @@ export class LobbyScene extends Phaser.Scene {
         this.mainMenuContainer.add(joinBtn);
 
         // Quick Join Button
-        const quickJoinBtn = this.createButton(width / 2, height / 2 + 140, 'Quick Join', () => {
+        const quickJoinBtn = this.createButton(width / 2, height / 2 + 200, 'Quick Join', () => {
             this.statusText.setText('Finding room...');
             SocketManager.joinGame(this.playerName);
         });

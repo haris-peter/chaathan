@@ -443,23 +443,24 @@ export class GameRoom {
         console.log(`[GameRoom ${this.roomId}] Spawning ${count} Chaathans`);
         this.aiChaathans = [];
 
-        // Base 2 Chaathans (Stalker + Specter)
-        this.aiChaathans.push(new AIChaathan(0, 3600, 300, this.roomBounds, CHAATHAN_TYPES.STALKER));
-        this.aiChaathans.push(new AIChaathan(1, 400, 2700, this.roomBounds, CHAATHAN_TYPES.SPECTER));
+        // Define distinct spawn positions for up to 6 Chaathans
+        const spawnPositions = [
+            { x: 3600, y: 300 },   // #0: TR
+            { x: 400, y: 2700 },   // #1: BL
+            { x: 400, y: 300 },    // #2: TL
+            { x: 3600, y: 2700 },  // #3: BR
+            { x: 2000, y: 300 },   // #4: TM
+            { x: 2000, y: 2700 }   // #5: BM
+        ];
 
-        // Additional Chaathans based on count
-        for (let i = 2; i < count; i++) {
-            // Alternate types
+        for (let i = 0; i < count; i++) {
+            // Alternate types: Even = Stalker (Red), Odd = Specter (Blue)
             const type = i % 2 === 0 ? CHAATHAN_TYPES.STALKER : CHAATHAN_TYPES.SPECTER;
-            // Random spawn positions not too close to center
-            // Simple logic: corners
-            let x, y;
-            if (i === 2) { x = 400; y = 300; } // Top-Left
-            else if (i === 3) { x = 3600; y = 2700; } // Bottom-Right
-            else if (i === 4) { x = 2000; y = 300; } // Top-Middle
-            else { x = 2000; y = 2700; } // Bottom-Middle
 
-            this.aiChaathans.push(new AIChaathan(i, x, y, this.roomBounds, type));
+            // Use predefined position or fallback
+            const pos = spawnPositions[i] || { x: 2000, y: 1500 };
+
+            this.aiChaathans.push(new AIChaathan(i, pos.x, pos.y, this.roomBounds, type));
         }
     }
 
