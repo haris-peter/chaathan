@@ -63,6 +63,11 @@ export class GameScene extends Phaser.Scene {
         this.setupCamera();
         this.setupControls();
         this.setupNetwork();
+
+        // Play theme music
+        if (!this.sound.get('theme')) {
+            this.sound.play('theme', { loop: true, volume: 0.5 });
+        }
     }
 
     createRoomBackgrounds() {
@@ -922,12 +927,14 @@ export class GameScene extends Phaser.Scene {
         SocketManager.on('game-over', (data) => {
             SocketManager.removeAllListeners();
             if (data.winner === 'poojari_win') {
+                this.sound.stopAll();
                 this.scene.start('CinematicScene', {
                     type: 'end',
                     nextScene: 'EndScene',
                     nextSceneData: { winner: data.winner }
                 });
             } else {
+                this.sound.stopAll();
                 this.scene.start('EndScene', { winner: data.winner });
             }
         });
