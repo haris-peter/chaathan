@@ -476,9 +476,6 @@ export class GameScene extends Phaser.Scene {
         // Initialize target position for interpolation
         sprite.targetX = sprite.x;
         sprite.targetY = sprite.y;
-
-        // Add footstep sound
-        sprite.walkSound = this.sound.add('footstep', { loop: true, volume: 0.5 });
     }
 
     createAIChaathans() {
@@ -839,6 +836,14 @@ export class GameScene extends Phaser.Scene {
                         sprite.nameTag.x = data.x;
                         sprite.nameTag.y = data.y - 30;
                     }
+
+                    // Force visibility reset
+                    sprite.setVisible(true);
+                    sprite.setAlpha(1);
+                    if (sprite.nameTag) {
+                        sprite.nameTag.setVisible(true);
+                        sprite.nameTag.setAlpha(1);
+                    }
                 }
                 this.myAura = data.aura;
                 this.updateAuraDisplay();
@@ -846,12 +851,18 @@ export class GameScene extends Phaser.Scene {
                 const newRoomX = Math.floor(data.x / GAME_CONSTANTS.ROOM_WIDTH);
                 const newRoomY = Math.floor(data.y / GAME_CONSTANTS.ROOM_HEIGHT);
 
+                // Camera fix: ensure immediate update
+                this.currentRoomX = newRoomX;
+                this.currentRoomY = newRoomY;
                 const camX = newRoomX * GAME_CONSTANTS.ROOM_WIDTH;
                 const camY = newRoomY * GAME_CONSTANTS.ROOM_HEIGHT;
                 this.cameras.main.setScroll(camX, camY);
 
-                this.currentRoomX = newRoomX;
-                this.currentRoomY = newRoomY;
+                // Reset interpolation targets
+                if (sprite) {
+                    sprite.targetX = data.x;
+                    sprite.targetY = data.y;
+                }
 
                 this.showMessage('You respawned!', 0xff6666);
 
@@ -866,6 +877,14 @@ export class GameScene extends Phaser.Scene {
                     if (sprite.nameTag) {
                         sprite.nameTag.x = data.x;
                         sprite.nameTag.y = data.y - 30;
+                    }
+
+                    // Force visibility and alpha reset for remote players
+                    sprite.setVisible(true);
+                    sprite.setAlpha(1);
+                    if (sprite.nameTag) {
+                        sprite.nameTag.setVisible(true);
+                        sprite.nameTag.setAlpha(1);
                     }
                 }
             }
@@ -1110,19 +1129,9 @@ export class GameScene extends Phaser.Scene {
                         if (dx > 0.5) entity.setFlipX(true);
                         else if (dx < -0.5) entity.setFlipX(false);
                     }
-
-                    // Play walk sound for players
-                    if (entity.walkSound && !entity.walkSound.isPlaying) {
-                        entity.walkSound.play();
-                    }
                 } else {
                     entity.x = entity.targetX;
                     entity.y = entity.targetY;
-
-                    // Stop walk sound
-                    if (entity.walkSound && entity.walkSound.isPlaying) {
-                        entity.walkSound.stop();
-                    }
                 }
 
                 // Name Tag Sync
@@ -1206,14 +1215,6 @@ export class GameScene extends Phaser.Scene {
             }
 
             SocketManager.sendMove(mySprite.x, mySprite.y);
-
-            if (mySprite.walkSound && !mySprite.walkSound.isPlaying) {
-                mySprite.walkSound.play();
-            }
-        } else {
-            if (mySprite.walkSound && mySprite.walkSound.isPlaying) {
-                mySprite.walkSound.stop();
-            }
         }
     }
 
