@@ -1080,7 +1080,7 @@ export class GameScene extends Phaser.Scene {
 
         this.handleMovement();
         this.checkRoomTransition();
-        this.updateMinimap();
+        // this.updateMinimap();
         this.updateFearEffect();
         this.checkSaltPickup();
     }
