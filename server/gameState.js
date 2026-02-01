@@ -438,7 +438,9 @@ export class GameRoom {
     // I'll update constructor first, then update initAIChaathans in a separate chunk.
 
     initAIChaathans() {
+        console.log(`[GameRoom ${this.roomId}] Initializing AI for difficulty: ${this.difficulty}`);
         const count = DIFFICULTY_COUNTS[this.difficulty] || 2;
+        console.log(`[GameRoom ${this.roomId}] Spawning ${count} Chaathans`);
         this.aiChaathans = [];
 
         // Base 2 Chaathans (Stalker + Specter)
