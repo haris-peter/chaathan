@@ -374,7 +374,7 @@ export class GameScene extends Phaser.Scene {
 
     createLamps() {
         this.lamps = [];
-        const miniLampScale = 0.15;
+        const miniLampScale = 0.25;
 
         this.gameData.lamps.forEach((lampData) => {
             const isGrand = lampData.type === 'grand';
@@ -445,12 +445,12 @@ export class GameScene extends Phaser.Scene {
 
         if (this.textures.exists('poojari-sprite')) {
             sprite = this.add.sprite(playerData.x, playerData.y, 'poojari-sprite', 'poojari_1.png');
-            sprite.setScale(0.1);
+            sprite.setScale(0.15);
             if (this.anims.exists('poojari-walk')) {
                 sprite.play('poojari-walk');
             }
         } else {
-            sprite = this.add.circle(playerData.x, playerData.y, 15, 0xffff00);
+            sprite = this.add.circle(playerData.x, playerData.y, 20, 0xffff00);
         }
 
         sprite.setDepth(10);
@@ -490,18 +490,19 @@ export class GameScene extends Phaser.Scene {
 
         if (this.textures.exists('chaathan-sprite')) {
             sprite = this.add.sprite(chaathanData.x, chaathanData.y, 'chaathan-sprite', 'chathan_1.png');
-            sprite.setScale(0.1);
+            sprite.setScale(0.15);
             if (this.anims.exists('chaathan-walk')) {
                 sprite.play('chaathan-walk');
             }
         } else {
             const color = chaathanData.color || 0xff0000;
-            sprite = this.add.circle(chaathanData.x, chaathanData.y, 20, color);
+            sprite = this.add.circle(chaathanData.x, chaathanData.y, 25, color);
         }
 
         sprite.chaathanId = chaathanData.id;
         sprite.chaathanType = chaathanData.type;
         sprite.state = chaathanData.state;
+        sprite.lastX = chaathanData.x;
         sprite.setDepth(10);
 
         if (chaathanData.color && sprite.setTint) {
@@ -797,6 +798,7 @@ export class GameScene extends Phaser.Scene {
                 GAME_CONSTANTS.RITUAL_CIRCLE.y,
                 GAME_CONSTANTS.RITUAL_CIRCLE.radius
             );
+            this.showGrandLampNotification();
         });
 
         SocketManager.on('chaathan-update', (data) => {
@@ -945,18 +947,30 @@ export class GameScene extends Phaser.Scene {
     updateAIChaathans(chaathansData) {
         chaathansData.forEach((cData, index) => {
             if (this.aiChaathans[index]) {
-                this.aiChaathans[index].x = cData.x;
-                this.aiChaathans[index].y = cData.y;
-                this.aiChaathans[index].state = cData.state;
+                const sprite = this.aiChaathans[index];
+                const prevX = sprite.lastX || sprite.x;
 
-                if (cData.color && this.aiChaathans[index].setTint) {
-                    this.aiChaathans[index].setTint(cData.color);
+                if (sprite.setFlipX) {
+                    if (cData.x > prevX + 0.5) {
+                        sprite.setFlipX(true);
+                    } else if (cData.x < prevX - 0.5) {
+                        sprite.setFlipX(false);
+                    }
+                }
+
+                sprite.lastX = cData.x;
+                sprite.x = cData.x;
+                sprite.y = cData.y;
+                sprite.state = cData.state;
+
+                if (cData.color && sprite.setTint) {
+                    sprite.setTint(cData.color);
                 }
 
                 if (cData.stunned) {
-                    this.aiChaathans[index].setAlpha(0.3);
+                    sprite.setAlpha(0.3);
                 } else if (cData.alpha !== undefined) {
-                    this.aiChaathans[index].setAlpha(cData.alpha);
+                    sprite.setAlpha(cData.alpha);
                 }
             }
         });
@@ -1022,6 +1036,45 @@ export class GameScene extends Phaser.Scene {
         });
     }
 
+    showGrandLampNotification() {
+        const width = this.cameras.main.width;
+        const height = this.cameras.main.height;
+
+        const overlay = this.add.rectangle(width / 2, height / 2, width, height, 0x000000, 0.7)
+            .setScrollFactor(0).setDepth(250);
+
+        const title = this.add.text(width / 2, height / 2 - 40, '🔥 ALL LAMPS LIT! 🔥', {
+            font: 'bold 32px Georgia',
+            fill: '#ffd700',
+            stroke: '#000000',
+            strokeThickness: 4
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(251);
+
+        const subtitle = this.add.text(width / 2, height / 2 + 20, 'Find the Ritual Circle in the center room!', {
+            font: '20px Courier New',
+            fill: '#ffffff'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(251);
+
+        const hint = this.add.text(width / 2, height / 2 + 60, 'Stand together for 10 seconds to complete the ritual', {
+            font: '16px Courier New',
+            fill: '#aaaaaa'
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(251);
+
+        this.time.delayedCall(4000, () => {
+            this.tweens.add({
+                targets: [overlay, title, subtitle, hint],
+                alpha: 0,
+                duration: 500,
+                onComplete: () => {
+                    overlay.destroy();
+                    title.destroy();
+                    subtitle.destroy();
+                    hint.destroy();
+                }
+            });
+        });
+    }
+
     update() {
         if (!this.isAlive || this.isTransitioning) return;
 
@@ -1057,6 +1110,10 @@ export class GameScene extends Phaser.Scene {
 
         if (this.cursors.up.isDown || this.wasd.up.isDown) vy = -1;
         else if (this.cursors.down.isDown || this.wasd.down.isDown) vy = 1;
+
+        if (vx !== 0 && mySprite.setFlipX) {
+            mySprite.setFlipX(vx > 0);
+        }
 
         if (vx !== 0 || vy !== 0) {
             const speed = GAME_CONSTANTS.PLAYER_SPEED / 60;

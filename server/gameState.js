@@ -132,9 +132,18 @@ class AIChaathan {
 
     pickNewPatrolTarget() {
         const margin = 100;
+        const attempts = 10;
+        for (let i = 0; i < attempts; i++) {
+            const newX = margin + Math.random() * (this.roomBounds.width - margin * 2);
+            const newY = margin + Math.random() * (this.roomBounds.height - margin * 2);
+            if (this.canMoveTo(newX, newY)) {
+                this.patrolTarget = { x: newX, y: newY };
+                return;
+            }
+        }
         this.patrolTarget = {
-            x: margin + Math.random() * (this.roomBounds.width - margin * 2),
-            y: margin + Math.random() * (this.roomBounds.height - margin * 2)
+            x: this.x + (Math.random() - 0.5) * 200,
+            y: this.y + (Math.random() - 0.5) * 200
         };
     }
 
@@ -300,19 +309,40 @@ export class GameRoom {
         this.aiChaathans = [];
         this.roomBounds = { width: MAP_WIDTH, height: MAP_HEIGHT };
         this.spawnPoints = [
-            { x: 200, y: 200 },
-            { x: 200, y: 400 },
-            { x: 400, y: 200 },
-            { x: 400, y: 400 }
+            { x: 1900, y: 1400 },
+            { x: 2100, y: 1400 },
+            { x: 1900, y: 1600 },
+            { x: 2100, y: 1600 }
         ];
     }
 
     initLamps() {
+        const ritualRoomCol = 2;
+        const ritualRoomRow = 2;
+
+        const roomCenters = [];
+        for (let row = 0; row < ROOM_ROWS; row++) {
+            for (let col = 0; col < ROOM_COLS; col++) {
+                if (col === ritualRoomCol && row === ritualRoomRow) continue;
+                roomCenters.push({
+                    x: col * ROOM_WIDTH + ROOM_WIDTH / 2,
+                    y: row * ROOM_HEIGHT + ROOM_HEIGHT / 2
+                });
+            }
+        }
+
+        for (let i = roomCenters.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [roomCenters[i], roomCenters[j]] = [roomCenters[j], roomCenters[i]];
+        }
+
+        const selectedRooms = roomCenters.slice(0, 4);
+
         return [
-            { id: 0, x: 400, y: 300, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
-            { id: 1, x: 3600, y: 300, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
-            { id: 2, x: 400, y: 2700, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
-            { id: 3, x: 3600, y: 2700, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
+            { id: 0, x: selectedRooms[0].x, y: selectedRooms[0].y, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
+            { id: 1, x: selectedRooms[1].x, y: selectedRooms[1].y, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
+            { id: 2, x: selectedRooms[2].x, y: selectedRooms[2].y, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
+            { id: 3, x: selectedRooms[3].x, y: selectedRooms[3].y, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.MINI },
             { id: 4, x: 2000, y: 1500, state: LAMP_STATES.UNLIT, type: LAMP_TYPES.GRAND }
         ];
     }

@@ -47,7 +47,7 @@ export class InstructionScene extends Phaser.Scene {
                 color: '#4CAF50',
                 items: [
                     'Find and light all 4 MINI LAMPS',
-                    'Lamps are in the 4 corner rooms',
+                    'Lamps spawn in random rooms each game',
                     'This activates the GRAND LAMP',
                     'Gather at Ritual Circle for 10 seconds'
                 ]
@@ -57,8 +57,8 @@ export class InstructionScene extends Phaser.Scene {
                 title: 'DANGERS',
                 color: '#f44336',
                 items: [
-                    'Two AI Chaathans patrol the mansion',
-                    'They will hunt you if spotted',
+                    'RED Stalker: Slower but larger range',
+                    'BLUE Specter: Faster but semi-invisible',
                     'Your LIGHT AURA drains constantly',
                     'Getting caught = lose 1 TALISMAN'
                 ]
@@ -70,7 +70,7 @@ export class InstructionScene extends Phaser.Scene {
                 items: [
                     '3 Talismans = 3 Lives total',
                     'Refuel aura at any LIT LAMP',
-                    '0% Aura = lose 1 Talisman',
+                    'Collect HOLY SALT to stun Chaathans',
                     '0 Talismans = become Spectator'
                 ]
             },
@@ -80,8 +80,8 @@ export class InstructionScene extends Phaser.Scene {
                 color: '#2196F3',
                 items: [
                     'WASD or Arrow Keys to move',
-                    'Press E near lamps to interact',
-                    'Use doors to move between rooms',
+                    'E = interact with lamps',
+                    'Q = use Holy Salt (stuns nearby)',
                     'Check minimap for navigation'
                 ]
             }
