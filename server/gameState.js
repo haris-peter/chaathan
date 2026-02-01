@@ -18,6 +18,8 @@ import {
     AURA_DECAY_RATE,
     AURA_REFUEL_DISTANCE,
     AI_CHAATHAN_COUNT,
+    DIFFICULTY_COUNTS,
+    DIFFICULTY_LEVELS,
     AI_UPDATE_INTERVAL,
     AI_PATROL_SPEED,
     AI_CHASE_SPEED,
@@ -395,8 +397,9 @@ class AIChaathan {
 }
 
 export class GameRoom {
-    constructor(roomId, duration) {
+    constructor(roomId, duration, difficulty = 'medium') {
         this.roomId = roomId;
+        this.difficulty = difficulty;
         this.players = new Map();
         this.gameState = GAME_STATES.WAITING;
         this.timeRemaining = duration || GAME_DURATION;
@@ -423,6 +426,39 @@ export class GameRoom {
             { x: 1900, y: 1600 },
             { x: 2100, y: 1600 }
         ];
+        // Initialize AI now that difficulty is set
+        this.initAIChaathans();
+    }
+
+    // ... initLamps and initDoors omitted (unchanged) ...
+    // Note: I will need to insert the initAIChaathans method separately if I can't overwrite the whole block easily.
+    // However, initAIChaathans follows initDoors. Let me check the file content context again.
+    // The previous view_file showed initAIChaathans at line 504.
+    // I need to be careful with existing content.
+    // I'll update constructor first, then update initAIChaathans in a separate chunk.
+
+    initAIChaathans() {
+        const count = DIFFICULTY_COUNTS[this.difficulty] || 2;
+        this.aiChaathans = [];
+
+        // Base 2 Chaathans (Stalker + Specter)
+        this.aiChaathans.push(new AIChaathan(0, 3600, 300, this.roomBounds, CHAATHAN_TYPES.STALKER));
+        this.aiChaathans.push(new AIChaathan(1, 400, 2700, this.roomBounds, CHAATHAN_TYPES.SPECTER));
+
+        // Additional Chaathans based on count
+        for (let i = 2; i < count; i++) {
+            // Alternate types
+            const type = i % 2 === 0 ? CHAATHAN_TYPES.STALKER : CHAATHAN_TYPES.SPECTER;
+            // Random spawn positions not too close to center
+            // Simple logic: corners
+            let x, y;
+            if (i === 2) { x = 400; y = 300; } // Top-Left
+            else if (i === 3) { x = 3600; y = 2700; } // Bottom-Right
+            else if (i === 4) { x = 2000; y = 300; } // Top-Middle
+            else { x = 2000; y = 2700; } // Bottom-Middle
+
+            this.aiChaathans.push(new AIChaathan(i, x, y, this.roomBounds, type));
+        }
     }
 
     initLamps() {
@@ -880,9 +916,9 @@ export class GameManager {
         this.playerRoomMap = new Map();
     }
 
-    createRoom(duration) {
+    createRoom(duration, difficulty) {
         const roomId = uuidv4().substring(0, 8);
-        const room = new GameRoom(roomId, duration);
+        const room = new GameRoom(roomId, duration, difficulty);
         this.rooms.set(roomId, room);
         return room;
     }
@@ -931,8 +967,8 @@ export class GameManager {
         return { error: 'Could not join room' };
     }
 
-    createNewRoom(socketId, playerName, duration) {
-        const room = this.createRoom(duration);
+    createNewRoom(socketId, playerName, duration, difficulty) {
+        const room = this.createRoom(duration, difficulty);
         const player = room.addPlayer(socketId, playerName);
         if (player) {
             this.playerRoomMap.set(socketId, room.roomId);

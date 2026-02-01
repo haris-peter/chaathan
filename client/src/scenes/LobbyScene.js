@@ -60,8 +60,14 @@ export class LobbyScene extends Phaser.Scene {
             if (isNaN(duration) || duration < 1) duration = 5;
             if (duration > 60) duration = 60; // Max 60 mins
 
-            this.statusText.setText(`Creating ${duration} min room...`);
-            SocketManager.createRoom(this.playerName, duration * 60 * 1000);
+            const difficultyInput = prompt('Enter Difficulty (easy/medium/hard):', 'medium').toLowerCase();
+            let difficulty = 'medium';
+            if (['easy', 'medium', 'hard'].includes(difficultyInput)) {
+                difficulty = difficultyInput;
+            }
+
+            this.statusText.setText(`Creating ${difficulty} room (${duration} min)...`);
+            SocketManager.createRoom(this.playerName, duration * 60 * 1000, difficulty);
         });
         this.mainMenuContainer.add(createBtn);
 

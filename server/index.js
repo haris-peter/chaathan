@@ -32,9 +32,9 @@ io.on('connection', (socket) => {
         joinRoomSuccess(socket, room, player);
     });
 
-    socket.on('create-room', ({ playerName, duration }) => {
-        console.log(`[${socket.id}] Create room requested: ${playerName} duration ${duration}`);
-        const { room, player, error } = gameManager.createNewRoom(socket.id, playerName, duration);
+    socket.on('create-room', ({ playerName, duration, difficulty }) => {
+        console.log(`[${socket.id}] Create room requested: ${playerName} duration ${duration} difficulty ${difficulty}`);
+        const { room, player, error } = gameManager.createNewRoom(socket.id, playerName, duration, difficulty || 'medium');
 
         if (error) {
             console.error(`[${socket.id}] Create room failed: ${error}`);

@@ -89,8 +89,8 @@ class SocketManagerClass {
         this.emit('join-game', playerName);
     }
 
-    createRoom(playerName, duration) {
-        this.emit('create-room', { playerName, duration });
+    createRoom(playerName, duration, difficulty) {
+        this.emit('create-room', { playerName, duration, difficulty });
     }
 
     sendReady() {

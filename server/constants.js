@@ -9,7 +9,19 @@ export const AURA_MAX = 100;
 export const AURA_DECAY_RATE = 2;
 export const AURA_REFUEL_DISTANCE = 60;
 
-export const AI_CHAATHAN_COUNT = 2;
+export const DIFFICULTY_LEVELS = {
+  EASY: 'easy',
+  MEDIUM: 'medium',
+  HARD: 'hard'
+};
+
+export const DIFFICULTY_COUNTS = {
+  [DIFFICULTY_LEVELS.EASY]: 2,
+  [DIFFICULTY_LEVELS.MEDIUM]: 4,
+  [DIFFICULTY_LEVELS.HARD]: 6
+};
+
+export const AI_CHAATHAN_COUNT = 2; // Fallback
 export const AI_UPDATE_INTERVAL = 50;
 export const AI_PATROL_SPEED = 80;
 export const AI_CHASE_SPEED = 150;
