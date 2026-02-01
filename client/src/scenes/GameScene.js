@@ -608,7 +608,7 @@ export class GameScene extends Phaser.Scene {
         this.createTalismanUI();
         this.createSaltUI();
         this.createRitualUI();
-        this.createMinimap();
+        // this.createMinimap();
     }
 
     createTimerUI() {

@@ -51,6 +51,7 @@ class AIChaathan {
         this.lastDirectionChange = 0;
         this.direction = { x: 0, y: 0 };
         this.doorOpenings = this.buildDoorOpeningsMap();
+        this.doorPositions = this.getDoorPositions();
         this.stunUntil = 0;
         this.pickNewPatrolTarget();
     }
@@ -151,21 +152,31 @@ class AIChaathan {
         return Math.hypot(this.x - player.x, this.y - player.y);
     }
 
-    findNearestVisiblePlayer(players) {
-        let nearest = null;
-        let nearestDist = Infinity;
+    findBestTarget(players) {
+        let bestTarget = null;
+        let lowestScore = Infinity;
         const detectionRange = this.config.detectionRange;
 
         players.forEach((player) => {
             if (!player.isAlive) return;
             const dist = this.getDistanceToPlayer(player);
-            if (dist < detectionRange && dist < nearestDist) {
-                nearest = player;
-                nearestDist = dist;
+
+            // Score based on distance and aura (lower is better)
+            // Weight Aura heavily so AI prioritizes weak players
+            // Score = Distance + (Aura * 5)
+            // E.g., Dist 100, Aura 100 => 100 + 500 = 600
+            // E.g., Dist 200, Aura 20 => 200 + 100 = 300 (Prefer slightly farther but weaker player)
+
+            if (dist < detectionRange) {
+                const score = dist + (player.aura * 5);
+                if (score < lowestScore) {
+                    lowestScore = score;
+                    bestTarget = player;
+                }
             }
         });
 
-        return nearest;
+        return bestTarget;
     }
 
     stun() {
@@ -176,6 +187,95 @@ class AIChaathan {
 
     isStunned() {
         return Date.now() < this.stunUntil;
+    }
+
+    getCurrentRoom(x, y) {
+        return {
+            col: Math.floor(x / ROOM_WIDTH),
+            row: Math.floor(y / ROOM_HEIGHT)
+        };
+    }
+
+    getDoorTarget(startX, startY, targetX, targetY) {
+        const startRoom = this.getCurrentRoom(startX, startY);
+        const targetRoom = this.getCurrentRoom(targetX, targetY);
+
+        if (startRoom.col === targetRoom.col && startRoom.row === targetRoom.row) {
+            return { x: targetX, y: targetY };
+        }
+
+        let nextCol = startRoom.col;
+        let nextRow = startRoom.row;
+        let findingVerticalDoor = false;
+
+        // Simple Manhattan routing: prioritize matching axis with largest difference or verify connectivity
+        // For grid 5x5, we can just move towards target room one step at a time
+
+        if (startRoom.col < targetRoom.col) {
+            nextCol++;
+            findingVerticalDoor = true;
+        } else if (startRoom.col > targetRoom.col) {
+            nextCol--;
+            findingVerticalDoor = true;
+        } else if (startRoom.row < targetRoom.row) {
+            nextRow++;
+            findingVerticalDoor = false;
+        } else if (startRoom.row > targetRoom.row) {
+            nextRow--;
+            findingVerticalDoor = false;
+        }
+
+        // Find door connecting current room to next room
+        // Vertical Step: Changes Row. Door is Horizontal type (y is constant boundary).
+        // Horizontal Step: Changes Col. Door is Vertical type (x is constant boundary).
+
+        // CORRECTION: 
+        // Moving Left/Right (Col change) -> Crosses Vertical Door.
+        // Moving Up/Down (Row change) -> Crosses Horizontal Door.
+
+        // Filter door positions
+        const possibleDoors = this.doorPositions.filter(door => {
+            if (findingVerticalDoor) {
+                // Determine expected X of door
+                // If moving Right (0->1), door is at 800.
+                // If moving Left (1->0), door is at 800.
+                // Door X should be max(startCol, nextCol) * 800? 
+                // Doors are at 800, 1600, etc.
+                const expectedX = Math.max(startRoom.col, nextCol) * ROOM_WIDTH;
+
+                // Door must be at this X, and within the current ROW's Y range
+                const rowTop = startRoom.row * ROOM_HEIGHT;
+                const rowBottom = (startRoom.row + 1) * ROOM_HEIGHT;
+
+                return Math.abs(door.x - expectedX) < 10 && door.y > rowTop && door.y < rowBottom;
+            } else {
+                // Moving Up/Down
+                const expectedY = Math.max(startRoom.row, nextRow) * ROOM_HEIGHT;
+
+                const colLeft = startRoom.col * ROOM_WIDTH;
+                const colRight = (startRoom.col + 1) * ROOM_WIDTH;
+
+                return Math.abs(door.y - expectedY) < 10 && door.x > colLeft && door.x < colRight;
+            }
+        });
+
+        if (possibleDoors.length > 0) {
+            // Pick closest door or random? Closest is better.
+            let closestDoor = possibleDoors[0];
+            let minDist = Math.hypot(startX - closestDoor.x, startY - closestDoor.y);
+
+            for (let i = 1; i < possibleDoors.length; i++) {
+                const d = Math.hypot(startX - possibleDoors[i].x, startY - possibleDoors[i].y);
+                if (d < minDist) {
+                    minDist = d;
+                    closestDoor = possibleDoors[i];
+                }
+            }
+            return closestDoor;
+        }
+
+        // Fallback: direct line if no door found (shouldn't happen with valid map)
+        return { x: targetX, y: targetY };
     }
 
     update(players, deltaTime) {
@@ -192,20 +292,25 @@ class AIChaathan {
         const alivePlayers = Array.from(players.values()).filter(p => p.isAlive);
 
         if (this.state === CHAATHAN_STATES.PATROL) {
-            const nearestPlayer = this.findNearestVisiblePlayer(players);
-            if (nearestPlayer) {
+            const bestTarget = this.findBestTarget(players);
+            if (bestTarget) {
                 this.state = CHAATHAN_STATES.HUNT;
-                this.targetPlayerId = nearestPlayer.id;
+                this.targetPlayerId = bestTarget.id;
                 return;
             }
+
+            // Patrol Logic with door navigation
+            let moveTarget = this.getDoorTarget(this.x, this.y, this.patrolTarget.x, this.patrolTarget.y);
 
             const distToTarget = Math.hypot(this.x - this.patrolTarget.x, this.y - this.patrolTarget.y);
             if (distToTarget < 20) {
                 this.pickNewPatrolTarget();
+                moveTarget = this.patrolTarget; // Update immediately
             }
 
+            // Move towards moveTarget (which is either final target or intermediate door)
             const speed = this.config.patrolSpeed * (deltaTime / 1000);
-            const angle = Math.atan2(this.patrolTarget.y - this.y, this.patrolTarget.x - this.x);
+            const angle = Math.atan2(moveTarget.y - this.y, moveTarget.x - this.x);
             const newX = this.x + Math.cos(angle) * speed;
             const newY = this.y + Math.sin(angle) * speed;
 
@@ -217,6 +322,7 @@ class AIChaathan {
             } else if (this.canMoveTo(this.x, newY)) {
                 this.y = newY;
             } else {
+                // If stuck, pick new target
                 this.pickNewPatrolTarget();
             }
 
@@ -239,8 +345,11 @@ class AIChaathan {
                 return;
             }
 
+            // HUNT Logic with door navigation
+            let moveTarget = this.getDoorTarget(this.x, this.y, target.x, target.y);
+
             const speed = this.config.chaseSpeed * (deltaTime / 1000);
-            const angle = Math.atan2(target.y - this.y, target.x - this.x);
+            const angle = Math.atan2(moveTarget.y - this.y, moveTarget.x - this.x);
             const newX = this.x + Math.cos(angle) * speed;
             const newY = this.y + Math.sin(angle) * speed;
 

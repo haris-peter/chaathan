@@ -2,27 +2,26 @@
 
 A co-op survival horror game inspired by Kerala folklore. Four Poojaris must work together to banish the Twin Chaathans before the darkness consumes them.
 
-## 🎮 Game Overview (V2 - Twin Terror Survival)
+## 🎮 Game Overview (V3 - Holy Salt Update)
 
 ### Premise
-Four Poojaris have entered a haunted tharavad to perform a ritual that will banish the Twin Chaathans forever. They must light the sacred lamps, manage their Light Aura, and complete the ritual in the Pooja Room while avoiding the AI-controlled Chaathans that hunt them relentlessly.
+Four Poojaris have entered a haunted tharavad to perform a ritual that will banish the Twin Chaathans forever. They must light the sacred lamps, manage their Light Aura, and complete the ritual in the Pooja Room while avoiding the AI-controlled Chaathans that hunt them relentlessly. Use **Holy Salt** to momentarily stun the spirits and survive!
 
 ### Win Conditions
-- **Poojaris Win**: Light all 4 mini lamps, activate the Grand Lamp, then all surviving players gather in the ritual circle for 10 seconds
-- **Chaathans Win**: Eliminate all Poojaris (they run out of talismans)
+- **Poojaris Win**: Light all 4 mini lamps (spawned in random rooms), activate the Grand Lamp, then all surviving players gather in the ritual circle for 10 seconds.
+- **Chaathans Win**: Eliminate all Poojaris (they run out of talismans).
 
 ---
 
-## 🆕 V2 Changes
+## 🆕 V3 Changes
 
-| Feature | V1 | V2 |
-|---------|----|----|
-| Game Mode | Asymmetric PvP (1v3) | Co-op Survival (4 vs AI) |
-| Chaathan | Human player | 2 AI-controlled enemies |
-| Lamps | 3 lamps | 4 mini + 1 grand lamp |
-| Lives | None | 3 Talismans per player |
-| Resource | None | Light Aura (decays over time) |
-| Death | N/A | Respawn until 0 talismans |
+| Feature | V1 | V2 | V3 (Current) |
+|---------|----|----|--------------|
+| **Game Mode** | Asymmetric PvP (1v3) | Co-op Survival (4 vs AI) | Co-op Survival with Items |
+| **Chaathan** | Human player | 2 Generic AI | **Stalker (Red)** & **Specter (Blue)** |
+| **Mechanics** | Hide & Seek | Aura Management | **Holy Salt (Stun Item)** + **Fear System** |
+| **Lamps** | 3 lamps | 4 corners + 1 grand | **Randomized locations** + 1 grand |
+| **Spawning** | Random | Corners | **Ritual Circle (Central Hub)** |
 
 ---
 
@@ -42,14 +41,14 @@ chaathan/
 │   │       ├── TitleScene.js     # Title screen
 │   │       ├── LobbyScene.js     # Room management
 │   │       ├── InstructionScene.js # Poojari instructions
-│   │       ├── GameScene.js      # Main gameplay
+│   │       ├── GameScene.js      # Main gameplay (V3 Logic)
 │   │       └── EndScene.js       # Win/lose screen
 │   └── package.json
 │
 └── server/                    # Node.js Game Server
     ├── index.js              # Express + Socket.IO server
-    ├── gameState.js          # Game state + AI Chaathan logic
-    ├── constants.js          # Game constants
+    ├── gameState.js          # Game state + Advanced AI logic
+    ├── constants.js          # Game constants (chaathan types, salt)
     └── package.json
 ```
 
@@ -59,31 +58,34 @@ chaathan/
 
 ### Map Layout
 - **25 interconnected rooms** in a 5x5 grid (4000x3000 pixels)
-- Rooms include: Entrance Hall, Main Hall, East Wing, Grand Gallery, Tower East, West Chamber, Central Room, Ancestors Hall, Library, Study, Storage, Kitchen, Pooja Room, Garden, Chapel, Cellar, Wine Room, Shrine, Courtyard, Stable, Dungeon, Crypt, Secret Room, Treasury, Tower West
+- **Randomized Mini Lamps**: 4 lamps spawn in random rooms (excluding the central ritual room) every game.
+- **Central Hub**: Players spawn at the Ritual Circle in the center.
 
 ### Poojari Mechanics (All 4 Players)
 
 | Mechanic | Description |
 |----------|-------------|
-| **Movement** | WASD/Arrow keys |
-| **Interact** | E key (light lamps, refuel aura) |
+| **Movement** | WASD/Arrow keys (Sprites flip direction) |
+| **Interact** | **E key** (light lamps, refuel aura, pickup salt) |
+| **Holy Salt** | **Q key** to use. Stuns nearby Chaathans for 3s. |
 | **Light Aura** | Decays at 2%/sec. Refuel at lit lamps. 0% = lose 1 talisman |
 | **Talismans** | 3 lives. Caught by Chaathan = lose 1. 0 talismans = permadeath |
 | **Respawn** | After losing a talisman, respawn with full aura |
 
-### AI Chaathan Behavior
+### AI Chaathan Behavior (Twin Terrors)
 
-| State | Behavior |
-|-------|----------|
-| **Patrol** | Wander randomly around the map |
-| **Hunt** | Chase players within 200px detection range |
-| **Attack** | Touch a player = they lose 1 talisman |
+| Type | Color | Behavior |
+|------|-------|----------|
+| **Stalker** | 🔴 Red | **Slower**, but has a larger detection range. Relentless pursuer. |
+| **Specter** | 🔵 Blue | **Faster**, semi-transparent ghost. Harder to see, quick to catch. |
+
+**Fear System**: When a Chaathan is nearby, a dark vignette closes in on your screen. Run!
 
 ### Objective
 
-1. **Light 4 mini lamps** scattered across the map
-2. **Grand Lamp activates** automatically when all 4 are lit
-3. **Gather in the ritual circle** (Pooja Room center)
+1. **Find & Light 4 Mini Lamps** (Locations randomized each game).
+2. **Grand Lamp activates** automatically when all 4 are lit (Notification appears).
+3. **Gather in the Ritual Circle** (Center Room).
 4. **Hold for 10 seconds** → Victory!
 
 ---
@@ -156,70 +158,27 @@ npm run dev
 
 ---
 
-## 📡 Network Events
+## 📡 Network Events (Updated)
 
-### Client → Server
 | Event | Description |
 |-------|-------------|
-| `join-game` | Quick join lobby |
-| `create-room` | Create private room |
-| `join-specific-room` | Join by room code |
-| `player-ready` | Confirm readiness |
-| `player-move` | Position update |
-| `light-lamp` | Light a mini lamp |
-| `refuel-aura` | Refuel at lit lamp |
-
-### Server → Client
-| Event | Description |
-|-------|-------------|
-| `joined-room` | Room join confirmation |
-| `show-instructions` | Transition to instructions |
-| `game-start` | Game initialization data |
-| `chaathan-update` | AI positions & states |
-| `aura-update` | Player aura level |
-| `talisman-update` | Player lives remaining |
-| `player-respawn` | Respawn position |
-| `player-died` | Permadeath notification |
-| `grand-lamp-activated` | Ritual circle unlocked |
-| `ritual-progress` | Ritual completion % |
+| `pickup-salt` | Player picks up holy salt item |
+| `use-salt` | Player uses salt to stun nearby AI |
+| `chaathan-stunned` | Server confirms stun effect on AI |
+| `grand-lamp-activated` | All lamps lit notification |
 | `game-over` | Win/lose result |
-
----
-
-## 📋 Game Constants
-
-```javascript
-// Players
-PLAYERS_REQUIRED: 4
-TALISMAN_COUNT: 3       // Lives per player
-AURA_MAX: 100           // Max light aura
-AURA_DECAY_RATE: 2      // 2% per second
-
-// AI
-AI_CHAATHAN_COUNT: 2
-AI_DETECTION_RANGE: 200
-AI_PATROL_SPEED: 80
-AI_HUNT_SPEED: 150
-
-// Lamps
-LAMP_COUNT: 5           // 4 mini + 1 grand
-
-// Ritual
-RITUAL_DURATION: 10000  // 10 seconds
-```
 
 ---
 
 ## 🎨 Assets
 
 ### Sprites
-- **Poojari**: `poojari_walk.png/json` - 4-frame walk animation
-- **Chaathan**: `chathan_walk.png/json` - 4-frame walk animation
+- **Poojari**: `poojari_walk.png/json` (Scaled 0.15x, Direction flip)
+- **Chaathan**: `chathan_walk.png/json` (Scaled 0.15x, Tinted Red/Blue)
 
-### Procedural (Generated in BootScene)
-- Lamps (unlit/lit states)
-- Floor tiles, walls
-- Ritual circle, minimap
+### Procedural
+- **Holy Salt**: Generated sprite (white pile)
+- Lamps, Walls, Floor, Ritual Circle
 
 ---
 
@@ -227,20 +186,18 @@ RITUAL_DURATION: 10000  // 10 seconds
 
 ### ✅ Completed
 - [x] Co-op 4-player gameplay
-- [x] 2 AI-controlled Chaathans (patrol/hunt)
+- [x] **Twin Chaathan AI** (Stalker & Specter types)
+- [x] **Holy Salt Stun Mechanic**
+- [x] **Fear Vignette System**
 - [x] Light Aura system with decay
 - [x] Talisman (lives) system
-- [x] Respawn mechanics
-- [x] Spectator mode on permadeath
-- [x] 4 mini lamps + Grand Lamp objective
+- [x] **Randomized Lamp Spawning**
+- [x] **Central Ritual Spawn**
+- [x] Spectator mode
 - [x] Room-based camera transitions
-- [x] Multiplayer lobby with room codes
-- [x] Vercel + Render deployment
 
 ### 🔲 Planned
 - [ ] Sound effects and music
-- [ ] Darkness/fog of war
-- [ ] More visual polish
 - [ ] Mobile controls
 - [ ] Difficulty levels
 
